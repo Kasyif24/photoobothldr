@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>LDR Booth — Photobooth untuk Pasangan Jarak Jauh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&family=Caveat:wght@500..700&display=swap" rel="stylesheet">
+<style>
+/* ============ DESAIN SISTEM ============ */
+:root{
+  --bg:#FFF7F8; --card:#FFFFFF; --ink:#33232A; --mut:#93727D; --line:#F4DCE4;
+  --pink:#FF6B9D; --pink-2:#FF8FB3; --pink-3:#FFC2D1; --pink-soft:#FFF0F5;
+  --shadow:0 24px 60px -28px rgba(214,72,124,.35);
+  --shadow-s:0 10px 30px -14px rgba(214,72,124,.28);
+  --r:22px; --rail:64px;
+}
+[data-theme="dark"]{
+  --bg:#141114; --card:#1E191C; --ink:#F7ECF0; --mut:#A38690; --line:#362A2F;
+  --pink-soft:#261C21;
+  --shadow:0 24px 60px -26px rgba(0,0,0,.6); --shadow-s:0 10px 30px -14px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Plus Jakarta Sans",sans-serif;background:var(--bg);color:var(--ink);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  transition:background .35s,color .35s;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit;font-size:15px;color:var(--ink)}
+img{display:block;max-width:100%}
+.ic{flex:none;vertical-align:-3px}
+::selection{background:var(--pink-3)}
+
+/* ---- screen router ---- */
+.screen{display:none;min-height:100dvh;flex-direction:column}
+.screen.active{display:flex;animation:scrIn .45s cubic-bezier(.22,.9,.3,1)}
+@keyframes scrIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---- komponen dasar ---- */
+.wrap{width:min(1080px,100% - 40px);margin-inline:auto}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:14px 24px;border-radius:16px;font-weight:700;font-size:15px;
+  background:var(--pink);color:#fff;box-shadow:var(--shadow-s);
+  transition:transform .18s,box-shadow .18s,background .18s;white-space:nowrap;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--pink-2)}
+.btn.big{padding:18px 30px;font-size:17px;border-radius:20px}
+.btn.icon{padding:12px;border-radius:14px}
+.btn:disabled{opacity:.5;pointer-events:none}
+.glass{background:color-mix(in srgb,var(--card) 72%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-s)}
+.field{display:block;margin-bottom:16px}
+.field>span{display:block;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+.input{width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);outline:none;transition:border-color .2s,box-shadow .2s}
+.input:focus{border-color:var(--pink);box-shadow:0 0 0 4px color-mix(in srgb,var(--pink) 15%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);font-size:13.5px;font-weight:600;background:var(--card);transition:all .18s}
+.chip:hover{border-color:var(--pink-2)}
+.chip.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--pink)}
+.dot{width:9px;height:9px;border-radius:50%;background:#31C48D;display:inline-block;flex:none}
+.dot.pulse{animation:dotP 1.6s infinite}
+.dot.wait{background:var(--pink-2)}
+@keyframes dotP{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,#31C48D 45%,transparent)}55%{box-shadow:0 0 0 7px transparent}}
+
+/* ---- topbar ---- */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.01em}
+.brand .mark{width:38px;height:38px;border-radius:13px;background:var(--pink);color:#fff;display:grid;place-items:center;box-shadow:var(--shadow-s)}
+.theme-btn{width:42px;height:42px;border-radius:14px;border:1.5px solid var(--line);display:grid;place-items:center;background:var(--card);transition:border-color .2s}
+.theme-btn:hover{border-color:var(--pink-2)}
+
+/* ---- landing ---- */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:34px 0 60px;flex:1}
+.hero h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(40px,5.6vw,68px);line-height:1.04;letter-spacing:-.02em;margin:18px 0 20px}
+.hero h1 em{font-style:italic;color:var(--pink)}
+.hero h1 .hbeat{display:inline-block;color:var(--pink);animation:hbeat 1.8s infinite;vertical-align:-2px}
+@keyframes hbeat{0%,100%{transform:scale(1)}12%{transform:scale(1.22)}24%{transform:scale(1)}36%{transform:scale(1.14)}}
+.hero p.sub{font-size:17px;line-height:1.65;color:var(--mut);max-width:46ch;margin-bottom:30px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+.flowline{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:13px;font-weight:600;flex-wrap:wrap}
+.flowline b{color:var(--ink)}
+.flowline .fa{color:var(--pink)}
+.privacy{display:flex;gap:10px;align-items:center;margin-top:26px;padding:12px 16px;border-radius:14px;background:var(--pink-soft);font-size:13px;color:var(--mut);max-width:fit-content}
+.hero-art{position:relative}
+.hero-art svg{width:100%;height:auto;overflow:visible}
+.dashline{stroke-dasharray:7 9;animation:dashmove 2.6s linear infinite}
+@keyframes dashmove{to{stroke-dashoffset:-32}}
+.pulse-heart{animation:hbeat 1.8s infinite;transform-origin:center;transform-box:fill-box}
+
+/* ---- layar form (create/join) ---- */
+.formwrap{max-width:560px;margin:12px auto 60px;width:100%}
+.card{padding:30px}
+.code-box{display:flex;flex-direction:column;align-items:center;gap:6px;padding:28px 20px;border-radius:18px;background:var(--pink-soft);border:1.5px dashed var(--pink-2)}
+.room-code{font-family:"Fraunces",serif;font-size:clamp(34px,7vw,46px);font-weight:600;letter-spacing:.12em;color:var(--pink)}
+.status-row{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14.5px;margin:22px 0;justify-content:center}
+.join-error{color:#D6486F;font-size:13.5px;font-weight:600;margin-top:12px;display:none}
+.join-error.show{display:block;animation:scrIn .3s}
+
+/* ---- room ---- */
+.room-head{display:flex;flex-direction:column;align-items:center;gap:10px;margin:6px 0 18px}
+.pair{display:flex;align-items:center;gap:0}
+.avatar{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:19px;color:#fff;background:var(--pink);box-shadow:var(--shadow-s);border:3px solid var(--card)}
+.avatar.b{background:#8E7CC3}
+.pair-link{width:86px;height:26px;margin:0 -4px;position:relative;z-index:0}
+.pair-names{font-family:"Fraunces",serif;font-size:clamp(22px,4vw,30px);font-weight:600;display:flex;align-items:center;gap:10px}
+.pair-names .hbeat{color:var(--pink);animation:hbeat 1.8s infinite;display:inline-block}
+.conn-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 15px;border-radius:999px;background:var(--pink-soft);font-size:13px;font-weight:700}
+.meta-strip{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;color:var(--mut);font-size:13.5px;font-weight:600;margin-bottom:20px}
+.meta-strip button{color:var(--pink);display:inline-flex;padding:4px;border-radius:8px}
+.cams{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.cam-panel{padding:14px;display:flex;flex-direction:column;gap:10px}
+.cam-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.cam-view{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:4/5;background:var(--pink-soft);display:grid;place-items:center}
+.cam-view video,.cam-view img.ph{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.cam-view video.me{transform:scaleX(-1)}
+.cam-empty{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--mut);font-size:13.5px;font-weight:600;text-align:center;padding:16px}
+.cam-empty .big-ic{width:52px;height:52px;border-radius:50%;background:var(--card);display:grid;place-items:center;color:var(--pink);box-shadow:var(--shadow-s)}
+.room-controls{display:flex;flex-direction:column;gap:14px;max-width:640px;margin:0 auto;width:100%}
+.seg{display:flex;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;padding:10px 8px;border-radius:10px;font-weight:700;font-size:13.5px;color:var(--mut);transition:all .18s}
+.seg button.on{background:var(--pink);color:#fff;box-shadow:var(--shadow-s)}
+.ctrl-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.auto-toggle{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;color:var(--mut);cursor:pointer;padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--card)}
+.auto-toggle .sw{width:34px;height:20px;border-radius:99px;background:var(--line);position:relative;transition:background .2s}
+.auto-toggle .sw::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.auto-toggle.on .sw{background:var(--pink)}
+.auto-toggle.on .sw::after{left:17px}
+.shoot-wrap{position:relative}
+#btn-shoot{width:100%;padding:22px;font-size:19px;border-radius:22px}
+#btn-shoot.pulse{animation:ctaP 1.6s infinite}
+@keyframes ctaP{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+.my-photo{display:flex;align-items:center;gap:14px;padding:14px}
+.my-photo img{width:64px;height:80px;object-fit:cover;border-radius:12px}
+.note-feed{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.note-bub{align-self:flex-start;background:var(--pink-soft);padding:10px 16px;border-radius:16px 16px 16px 5px;font-size:14px;max-width:85%;animation:scrIn .3s}
+.note-bub b{color:var(--pink);font-size:12px;display:block;margin-bottom:2px}
+
+/* ---- countdown & flash ---- */
+#countdown{position:fixed;inset:0;display:none;place-items:center;z-index:90;pointer-events:none}
+#countdown.show{display:grid}
+#countdown span{font-family:"Fraunces",serif;font-size:clamp(110px,26vw,220px);color:var(--pink);text-shadow:0 10px 40px color-mix(in srgb,var(--pink) 40%,transparent);animation:cdz 1s cubic-bezier(.2,.8,.3,1) infinite}
+@keyframes cdz{0%{transform:scale(1.5);opacity:0}25%{transform:scale(1);opacity:1}80%{opacity:1}100%{transform:scale(.85);opacity:0}}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:95}
+#flash.go{animation:fl .5s ease-out}
+@keyframes fl{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+
+/* ---- layouts ---- */
+.lay-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin:24px 0 60px}
+.lay-card{padding:14px;text-align:left;transition:transform .2s,box-shadow .2s;cursor:pointer}
+.lay-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.lay-card canvas{width:100%;border-radius:12px;background:var(--pink-soft)}
+.lay-card h4{margin:12px 2px 3px;font-size:15.5px}
+.lay-card p{margin:0 2px;font-size:12.5px;color:var(--mut)}
+.lay-card.sel{outline:3px solid var(--pink)}
+
+/* ---- editor ---- */
+#ed-top{display:flex;align-items:center;gap:10px;padding:14px 0}
+#ed-top .title{font-weight:800;font-size:15px;letter-spacing:.06em}
+#ed-main{flex:1;display:grid;grid-template-columns:var(--rail) 300px 1fr 264px;gap:14px;padding-bottom:20px;min-height:0}
+#ed-rail{display:flex;flex-direction:column;gap:6px;align-self:start;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:8px;position:sticky;top:14px}
+.rail-btn{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;color:var(--mut);transition:all .18s;position:relative}
+.rail-btn:hover{color:var(--pink);background:var(--pink-soft)}
+.rail-btn.on{background:var(--pink);color:#fff;box-shadow:var(--shadow-s)}
+#ed-panel{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;overflow-y:auto;max-height:calc(100dvh - 150px);position:sticky;top:14px}
+#ed-panel h3{font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+#ed-panel::-webkit-scrollbar{width:5px}
+#ed-panel::-webkit-scrollbar-thumb{background:var(--pink-3);border-radius:9px}
+.panel-note{font-size:12.5px;color:var(--mut);line-height:1.55;margin-bottom:14px}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.fitem{border-radius:12px;border:2px solid var(--line);overflow:hidden;background:var(--bg);padding:0;transition:border-color .15s,transform .15s;cursor:pointer}
+.fitem:hover{transform:translateY(-2px)}
+.fitem.on{border-color:var(--pink);box-shadow:0 0 0 3px color-mix(in srgb,var(--pink) 20%,transparent)}
+.fitem img,.fitem canvas{width:100%;display:block}
+.fitem span{display:block;font-size:10.5px;font-weight:700;padding:5px 4px;text-align:center;color:var(--mut)}
+.stick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stick-grid button{font-size:27px;padding:11px 4px;border-radius:13px;background:var(--bg);border:1.5px solid var(--line);transition:all .15s}
+.stick-grid button:hover{border-color:var(--pink-2);transform:scale(1.1)}
+.photo-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.photo-card img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:12px}
+.photo-card .who{font-size:12px;font-weight:800;margin:7px 2px 7px;display:flex;justify-content:space-between;align-items:center}
+.retake-btn{width:30px;height:30px;border-radius:9px;background:var(--pink);color:#fff;display:grid;place-items:center}
+.quote-btn{width:100%;text-align:left;font-size:12.5px;padding:9px 12px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);margin-bottom:7px;font-style:italic;line-height:1.45;transition:border-color .15s}
+.quote-btn:hover{border-color:var(--pink-2)}
+.row-ctl{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.row-ctl label{font-size:12px;font-weight:800;width:64px;color:var(--mut);flex:none}
+.row-ctl input[type=range]{flex:1;accent-color:var(--pink)}
+.swatches{display:flex;gap:7px;flex-wrap:wrap}
+.swatch{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--card);box-shadow:0 0 0 1.5px var(--line);cursor:pointer;transition:transform .15s}
+.swatch:hover{transform:scale(1.15)}
+.swatch.on{box-shadow:0 0 0 2.5px var(--pink)}
+.tgl-row{display:flex;gap:7px}
+.tgl{flex:1;padding:9px;border-radius:11px;border:1.5px solid var(--line);font-weight:800;font-size:12.5px;background:var(--bg);color:var(--mut)}
+.tgl.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+#ed-canvas-wrap{display:grid;place-items:center;position:relative;min-height:0}
+#ed-canvas{max-width:100%;max-height:calc(100dvh - 150px);width:auto;height:auto;border-radius:14px;box-shadow:var(--shadow);background:#fff;touch-action:none}
+#sel-bar{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;z-index:5;animation:scrIn .25s}
+#sel-bar.show{display:flex}
+#sel-bar input[type=range]{width:74px;accent-color:var(--pink)}
+#sel-bar .mini{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--pink-soft);color:var(--pink)}
+#sel-bar .mini.danger{color:#D6486F;background:color-mix(in srgb,#D6486F 12%,transparent)}
+#ed-props{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;align-self:start;position:sticky;top:14px;max-height:calc(100dvh - 150px);overflow-y:auto}
+#ed-props h4{font-size:13px;margin-bottom:12px;display:flex;gap:7px;align-items:center}
+#ed-props .empty-msg{font-size:12.5px;color:var(--mut);line-height:1.6}
+
+/* ---- result ---- */
+.result-hero{text-align:center;padding:26px 0 8px}
+.result-hero .spark{color:var(--pink);letter-spacing:.4em;font-size:18px;animation:sparkT 1.6s infinite}
+@keyframes sparkT{0%,100%{opacity:.4}50%{opacity:1}}
+.result-hero h2{font-family:"Fraunces",serif;font-size:clamp(26px,5vw,40px);font-weight:600;margin:10px 0 4px}
+#res-canvas{max-width:min(480px,92vw);max-height:56dvh;width:auto;height:auto;border-radius:16px;box-shadow:var(--shadow);animation:zoomIn .7s cubic-bezier(.2,.9,.3,1.1) both .15s;margin:18px auto;display:block}
+@keyframes zoomIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+#res-meta{text-align:center;color:var(--mut);font-weight:600;font-size:14px;line-height:1.8}
+#res-meta .nm{font-family:"Fraunces",serif;font-size:20px;color:var(--ink)}
+.res-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:22px 0 40px}
+.res-size{max-width:280px;margin:0 auto}
+
+/* ---- modal ---- */
+#modal-root{position:fixed;inset:0;display:none;place-items:center;z-index:100;padding:18px}
+#modal-root.show{display:grid}
+.modal-bg{position:absolute;inset:0;background:rgba(30,15,22,.5);backdrop-filter:blur(6px);animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{position:relative;width:min(440px,100%);padding:26px;animation:zoomIn .35s cubic-bezier(.2,.9,.3,1.1);max-height:88dvh;overflow-y:auto}
+.modal h3{font-family:"Fraunces",serif;font-size:21px;margin-bottom:6px}
+.modal .msub{font-size:13.5px;color:var(--mut);margin-bottom:18px;line-height:1.55}
+.modal .x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:var(--mut)}
+.modal .x:hover{background:var(--pink-soft);color:var(--pink)}
+/* kamera modal */
+#cam-modal .cam-stage{border-radius:16px;overflow:hidden;aspect-ratio:3/4;background:#111;position:relative;margin-bottom:14px}
+#cam-modal video,#cam-modal canvas{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+#cam-modal video{transform:scaleX(-1)}
+.shutter{width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid var(--pink);margin:0 auto;display:block;transition:transform .15s;box-shadow:var(--shadow-s)}
+.shutter:active{transform:scale(.9)}
+
+/* ---- toast ---- */
+#toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{display:flex;align-items:center;gap:9px;background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:var(--shadow);animation:tin .35s cubic-bezier(.2,.9,.3,1.2)}
+.toast .ic{color:var(--pink)}
+@keyframes tin{from{opacity:0;transform:translateY(16px) scale(.9)}to{opacity:1;transform:none}}
+
+/* ---- fx & confetti ---- */
+#fx{position:fixed;inset:0;z-index:0;pointer-events:none}
+main{position:relative;z-index:1}
+#confetti{position:fixed;inset:0;z-index:80;pointer-events:none}
+
+/* ---- responsive ---- */
+@media (max-width:1020px){
+  #ed-main{grid-template-columns:var(--rail) 260px 1fr}
+  #ed-props{display:none}
+}
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;gap:26px;padding-bottom:44px}
+  .hero-art{max-width:420px;margin:0 auto}
+  .cams{grid-template-columns:1fr}
+  #ed-main{display:block;padding-bottom:150px}
+  #ed-rail{display:none}
+  #ed-panel{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:52dvh;border-radius:24px 24px 0 0;z-index:40;box-shadow:0 -20px 50px -20px rgba(0,0,0,.25);transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.9,.3,1);margin:0}
+  #ed-panel.open{transform:none}
+  #ed-panel::before{content:"";display:block;width:44px;height:5px;border-radius:9px;background:var(--line);margin:-4px auto 12px}
+  #ed-canvas{max-height:calc(100dvh - 320px)}
+  #ed-props{display:none}
+  #bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:45;display:flex;background:var(--card);border-top:1.5px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom));justify-content:space-around}
+  .bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--mut);padding:6px 2px;border-radius:12px}
+  .bn-btn.on{color:var(--pink)}
+  .bn-btn.on .bic{background:var(--pink);color:#fff}
+  .bn-btn .bic{width:40px;height:30px;border-radius:10px;display:grid;place-items:center;transition:all .2s}
+  #sel-bar{top:2px}
+}
+@media (min-width:901px){ #bottom-nav{display:none} }
+@media (max-width:560px){
+  .wrap{width:calc(100% - 32px)}
+  .card{padding:22px}
+  #btn-shoot{padding:20px;font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s !important;transition-duration:.001s !important}}
+</style>
+</head>
+<body>
+
+<canvas id="fx"></canvas>
+<div id="countdown"><span></span></div>
+<div id="flash"></div>
+<canvas id="confetti"></canvas>
+<div id="toasts"></div>
+<div id="modal-root"></div>
+
+<main>
+
+<!-- ================= LANDING ================= -->
+<section id="s-landing" class="screen active">
+  <div class="wrap" style="display:flex;flex-direction:column;flex:1">
+    <div class="topbar">
+      <div class="brand"><span class="mark" id="brand-ic"></span>LDR Booth</div>
+      <button class="theme-btn tgl-theme" aria-label="Ganti tema"></button>
+    </div>
+    <div class="hero">
+      <div>
+        <div class="eyebrow">Photobooth untuk pasangan jarak jauh</div>
+        <h1>Distance Can't Stop Your <em>Moment</em> <span class="hbeat" data-heart></span></h1>
+        <p class="sub">Buat photobooth bersama pasanganmu, meskipun kalian berada di tempat yang berbeda. Satu kode, dua kamera, satu kenangan yang menyatu.</p>
+        <div class="hero-cta">
+          <button class="btn big" id="btn-go-create"><span data-ic="heartFill"></span>Buat Room</button>
+          <button class="btn ghost big" id="btn-go-join"><span data-ic="key"></span>Gabung dengan Kode</button>
+        </div>
+        <div class="flowline"><b>Create</b><span class="fa" data-ic="arrowR"></span><b>Connect</b><span class="fa" data-ic="arrowR"></span><b>Capture</b><span class="fa" data-ic="arrowR"></span><b>Customize</b><span class="fa" data-ic="arrowR"></span><b>Download</b></div>
+        <div class="privacy"><span data-ic="check"></span>Foto kamu bersifat privat dan hanya dibagikan dengan pasanganmu. Tidak ada yang tersimpan di server mana pun.</div>
+      </div>
+      <div class="hero-art">
+        <svg viewBox="0 0 460 340" fill="none">
+          <!-- kota kiri -->
+          <g stroke="var(--line)" stroke-width="2.5"><path d="M20 300h150M40 300v-60h34v60M92 300v-92h40v92M150 300v-45h20v45"/></g>
+          <!-- kota kanan -->
+          <g stroke="var(--line)" stroke-width="2.5"><path d="M290 300h150M310 300v-45h20v45M348 300v-92h40v92M406 300v-60h34v60"/></g>
+          <!-- garis koneksi -->
+          <path class="dashline" d="M105 150 C 165 60, 295 60, 355 150" stroke="var(--pink)" stroke-width="2.5"/>
+          <!-- polaroid kiri -->
+          <g transform="rotate(-6 105 165)">
+            <rect x="55" y="105" width="100" height="120" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="2"/>
+            <rect x="65" y="115" width="80" height="80" rx="5" fill="var(--pink-soft)"/>
+            <circle cx="105" cy="150" r="17" fill="var(--pink-2)"/>
+            <path d="M78 195c6-13 16-19 27-19s21 6 27 19" fill="var(--pink-2)"/>
+            <path d="M92 218h26" stroke="var(--pink-3)" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <!-- polaroid kanan -->
+          <g transform="rotate(5 355 165)">
+            <rect x="305" y="105" width="100" height="120" rx="8" fill="var(--card)" stroke="var(--line)" stroke-width="2"/>
+            <rect x="315" y="115" width="80" height="80" rx="5" fill="var(--pink-soft)"/>
+            <circle cx="355" cy="152" r="17" fill="#8E7CC3"/>
+            <path d="M328 196c6-13 16-19 27-19s21 6 27 19" fill="#8E7CC3"/>
+            <path d="M342 218h26" stroke="var(--pink-3)" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <!-- hati tengah -->
+          <path class="pulse-heart" d="M230 138c-11-10-20-17-20-27a10 10 0 0 1 20-4 10 10 0 0 1 20 4c0 10-9 17-20 27z" fill="var(--pink)"/>
+          <g fill="var(--pink-3)"><circle cx="160" cy="78" r="3.5"/><circle cx="230" cy="52" r="4.5"/><circle cx="300" cy="76" r="3.5"/><circle cx="198" cy="106" r="2.6"/><circle cx="264" cy="104" r="2.6"/></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CREATE ================= -->
+<section id="s-create" class="screen">
+  <div class="wrap" style="display:flex;flex-direction:column;flex:1">
+    <div class="topbar">
+      <button class="btn ghost icon back-home" aria-label="Kembali"></button>
+      <button class="theme-btn tgl-theme" aria-label="Ganti tema"></button>
+    </div>
+    <div class="formwrap">
+      <div class="card glass" id="create-form-card">
+        <div class="eyebrow">Langkah 1 dari 2</div>
+        <h2 style="font-family:Fraunces,serif;font-weight:600;font-size:29px;margin:8px 0 22px">Buat Room Pasangan</h2>
+        <label class="field"><span>Nama Kamu</span><input class="input" id="in-nameA" maxlength="20" placeholder="cth. Muhammad"></label>
+        <label class="field"><span>Nama Pasangan</span><input class="input" id="in-nameB" maxlength="20" placeholder="cth. Silvia"></label>
+        <div class="field"><span>Pilih Tema</span><div class="chips" id="theme-chips"></div></div>
+        <button class="btn big" id="btn-create" style="width:100%;margin-top:8px"><span data-ic="heartFill"></span>Buat Room</button>
+      </div>
+      <div class="card glass" id="create-result-card" style="display:none;text-align:center">
+        <div class="eyebrow">Kode Room Kamu</div>
+        <div class="code-box" style="margin:16px 0"><div class="room-code" id="room-code">LOVE-7K29</div>
+          <div style="font-size:12.5px;color:var(--mut)">Bagikan kode ini kepada pasanganmu</div></div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="btn ghost" id="btn-copy-code"><span data-ic="copy"></span>Salin Kode</button>
+          <button class="btn ghost" id="btn-share-code"><span data-ic="share"></span>Bagikan Kode</button>
+        </div>
+        <div class="status-row" id="join-status"><span class="dot wait pulse"></span>Menunggu pasangan bergabung...</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn big" id="btn-to-camera" style="display:none;width:100%"><span data-ic="camera"></span>Mulai Photobooth</button>
+          <button class="btn ghost" id="btn-solo" style="width:100%"><span data-ic="user"></span>Tidak bisa buka dua perangkat? Mode Solo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= JOIN ================= -->
+<section id="s-join" class="screen">
+  <div class="wrap" style="display:flex;flex-direction:column;flex:1">
+    <div class="topbar">
+      <button class="btn ghost icon back-home" aria-label="Kembali"></button>
+      <button class="theme-btn tgl-theme" aria-label="Ganti tema"></button>
+    </div>
+    <div class="formwrap">
+      <div class="card glass">
+        <div class="eyebrow">Langkah 1 dari 2</div>
+        <h2 style="font-family:Fraunces,serif;font-weight:600;font-size:29px;margin:8px 0 6px">Gabung Room</h2>
+        <p style="color:var(--mut);font-size:14px;margin-bottom:22px;line-height:1.6">Masukkan kode yang dikirimkan pasanganmu untuk membuka ruang photobooth kalian.</p>
+        <label class="field"><span>Masukkan Kode Pasangan</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="room-code" style="font-size:22px;color:var(--mut)">LOVE–</span>
+            <input class="input" id="in-code" maxlength="4" placeholder="7K29" style="font-family:Fraunces,serif;font-size:26px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;text-align:center">
+          </div>
+        </label>
+        <div class="join-error" id="join-err"></div>
+        <button class="btn big" id="btn-join" style="width:100%;margin-top:10px"><span data-ic="heartFill"></span>Gabung Room</button>
+        <div style="margin-top:16px;font-size:12.5px;color:var(--mut);line-height:1.6">Versi demo ini tersinkron antar tab/jendela di perangkat yang sama. Buka tab baru untuk berperan sebagai pasangan.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ROOM / KAMERA ================= -->
+<section id="s-room" class="screen">
+  <div class="wrap" style="display:flex;flex-direction:column;flex:1">
+    <div class="topbar">
+      <button class="btn ghost icon" id="btn-room-back" aria-label="Kembali"></button>
+      <div class="title" style="font-weight:800;letter-spacing:.06em;font-size:14px" id="room-head-code"></div>
+      <button class="theme-btn tgl-theme" aria-label="Ganti tema"></button>
+    </div>
+    <div class="room-head">
+      <div class="pair">
+        <div class="avatar" id="avA">M</div>
+        <svg class="pair-link" viewBox="0 0 86 26" fill="none">
+          <path class="dashline" d="M4 13 C 26 2, 60 2, 82 13" stroke="var(--pink)" stroke-width="2"/>
+          <path class="pulse-heart" d="M43 17c-4.5-4-8-6.8-8-10.6A4 4 0 0 1 43 4a4 4 0 0 1 8 2.4c0 3.8-3.5 6.6-8 10.6z" fill="var(--pink)"/>
+        </svg>
+        <div class="avatar b" id="avB">S</div>
+      </div>
+      <div class="pair-names" id="pair-names">Muhammad <span class="hbeat" data-heart></span> Silvia</div>
+      <div class="conn-chip" id="conn-chip"><span class="dot wait pulse"></span>Menunggu pasangan…</div>
+    </div>
+    <div class="meta-strip" id="meta-strip"></div>
+
+    <div class="cams">
+      <div class="cam-panel glass">
+        <div class="cam-label"><span data-ic="camera"></span>Kamera Kamu</div>
+        <div class="cam-view"><video id="vid-me" class="me" autoplay playsinline muted></video>
+          <div class="cam-empty" id="cam-me-empty"><div class="big-ic" data-ic="camera"></div><span id="cam-me-msg">Izinkan akses kamera untuk memulai</span></div>
+        </div>
+      </div>
+      <div class="cam-panel glass">
+        <div class="cam-label"><span data-ic="users"></span>Kamera Pasangan</div>
+        <div class="cam-view" id="partner-view">
+          <div class="cam-empty" id="cam-partner-empty"><div class="big-ic" data-ic="users"></div><span id="partner-msg">Waiting for your partner…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="room-controls">
+      <div class="my-photo glass" id="my-photo" style="display:none">
+        <img id="my-photo-img" alt="Foto kamu">
+        <div style="flex:1"><div style="font-weight:800;font-size:14px">Foto kamu terkirim</div><div style="font-size:12.5px;color:var(--mut)" id="my-photo-sub">Menunggu foto pasangan…</div></div>
+        <button class="btn ghost icon" id="btn-my-retake" aria-label="Ambil ulang"></button>
+      </div>
+      <div class="ctrl-row">
+        <div class="seg" id="timer-seg" style="flex:1;min-width:180px">
+          <button data-t="3" class="on">3 detik</button><button data-t="5">5 detik</button><button data-t="10">10 detik</button>
+        </div>
+        <div class="auto-toggle" id="auto-cap"><span>Auto Capture</span><span class="sw"></span></div>
+      </div>
+      <div class="ctrl-row" id="solo-target" style="display:none">
+        <span style="font-size:13px;font-weight:700;color:var(--mut)">Ambil foto untuk:</span>
+        <div class="seg" style="flex:1"><button data-r="A" class="on" id="solo-ta">Foto A</button><button data-r="B" id="solo-tb">Foto B</button></div>
+      </div>
+      <div class="shoot-wrap">
+        <button class="btn big" id="btn-shoot"><span data-ic="camera"></span><span id="shoot-label">TAKE PHOTO</span></button>
+        <button class="btn ghost icon" id="btn-flip" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);color:#fff;border-color:transparent" aria-label="Ganti kamera"></button>
+      </div>
+      <div class="cam-error" id="cam-err" style="display:none;align-items:center;gap:10px;font-size:13px;color:#D6486F;font-weight:600;flex-wrap:wrap">
+        <span style="flex:1" id="cam-err-msg"></span>
+        <button class="btn ghost" id="btn-cam-retry" style="padding:9px 14px;font-size:13px">Coba lagi</button>
+        <button class="btn ghost" id="btn-demo" style="padding:9px 14px;font-size:13px">Pakai Foto Demo</button>
+      </div>
+      <div class="glass" style="padding:14px 16px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <span data-ic="note" style="color:var(--pink)"></span>
+          <input class="input" id="in-note" placeholder="Kirim love note… cth. Can't wait to see you" style="padding:10px 12px">
+          <button class="btn icon" id="btn-send-note" aria-label="Kirim"></button>
+        </div>
+        <div class="note-feed" id="note-feed"></div>
+      </div>
+    </div>
+    <div style="height:40px"></div>
+  </div>
+</section>
+
+<!-- ================= LAYOUT CHOOSER ================= -->
+<section id="s-layouts" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn ghost icon" id="btn-lay-back" aria-label="Kembali"></button>
+      <button class="theme-btn tgl-theme" aria-label="Ganti tema"></button>
+    </div>
+    <div style="text-align:center;margin:4px 0 6px">
+      <div class="eyebrow">Kedua foto sudah siap</div>
+      <h2 style="font-family:Fraunces,serif;font-weight:600;font-size:clamp(26px,4.5vw,36px);margin:8px 0 6px">Pilih Layout Photobooth</h2>
+      <p style="color:var(--mut);font-size:14px">Semua layout bisa kamu ubah lagi nanti di editor.</p>
+    </div>
+    <div class="lay-grid" id="layout-grid"></div>
+  </div>
+</section>
+
+<!-- ================= EDITOR ================= -->
+<section id="s-editor" class="screen">
+  <div class="wrap" style="display:flex;flex-direction:column;flex:1">
+    <div id="ed-top">
+      <button class="btn ghost icon" id="btn-ed-back" aria-label="Kembali"></button>
+      <div class="title" id="ed-code"></div>
+      <div style="flex:1"></div>
+      <button class="btn ghost" id="btn-surprise"><span data-ic="wand"></span>Surprise Me</button>
+      <button class="btn" id="btn-ed-done">Selesai<span data-ic="arrowR"></span></button>
+    </div>
+    <div id="ed-main">
+      <div id="ed-rail"></div>
+      <div id="ed-panel"></div>
+      <div id="ed-canvas-wrap">
+        <canvas id="ed-canvas"></canvas>
+        <div class="glass" id="sel-bar"></div>
+      </div>
+      <div id="ed-props"></div>
+    </div>
+  </div>
+  <nav id="bottom-nav"></nav>
+</section>
+
+<!-- ================= RESULT ================= -->
+<section id="s-result" class="screen">
+  <canvas id="confetti"></canvas>
+  <div class="wrap" style="display:flex;flex-direction:column;align-items:center">
+    <div class="topbar" style="width:100%">
+      <button class="btn ghost icon" id="btn-res-back" aria-label="Kembali"></button>
+      <button class="theme-btn tgl-theme" aria-label="Ganti tema"></button>
+    </div>
+    <div class="result-hero">
+      <div class="spark">✦ ✦ ✦</div>
+      <h2>Your Memory is Ready</h2>
+      <div style="color:var(--pink);font-weight:700;display:flex;justify-content:center;gap:8px;align-items:center"><span data-heart></span> OUR MEMORY <span data-heart></span></div>
+    </div>
+    <canvas id="res-canvas"></canvas>
+    <div id="res-meta"></div>
+    <div class="res-size field" style="margin-top:16px"><span>Resolusi unduhan</span>
+      <select class="input" id="res-size">
+        <option value="1080x1350" selected>1080 × 1350 (Portrait)</option>
+        <option value="1080x1080">1080 × 1080 (Persegi)</option>
+        <option value="1920x1080">1920 × 1080 (Landscape)</option>
+        <option value="1200x1800">1200 × 1800 (Cetak)</option>
+      </select>
+    </div>
+    <div class="res-actions">
+      <button class="btn big" id="btn-dl-png"><span data-ic="download"></span>Download PNG</button>
+      <button class="btn ghost big" id="btn-dl-jpg"><span data-ic="download"></span>Download JPG</button>
+      <button class="btn ghost big" id="btn-share"><span data-ic="share"></span>Share Memory</button>
+      <button class="btn ghost" id="btn-again"><span data-ic="refresh"></span>Create Again</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ================================================================
+   LDR BOOTH — Photobooth pasangan jarak jauh (single file)
+   Arsitektur: util → ikon → tema → FX → data desain → sync room →
+   kamera → alur room → engine canvas editor → panel → download → init
+================================================================ */
+'use strict';
+
+/* ---------- 1. UTIL ---------- */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const on = (el, ev, fn) => el.addEventListener(ev, fn);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const rand = (a,b) => a + Math.random()*(b-a);
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(msg, icn='check'){
+  const t = document.createElement('div');
+  t.className = 'toast'; t.innerHTML = ic(icn,17) + esc(msg);
+  $('#toasts').appendChild(t);
+  setTimeout(()=>{ t.style.transition='opacity .4s,transform .4s'; t.style.opacity='0'; t.style.transform='translateY(10px)'; setTimeout(()=>t.remove(),400); }, 2400);
+}
+function openModal(html, id=''){
+  const root = $('#modal-root');
+  root.innerHTML = `<div class="modal-bg"></div><div class="modal glass" ${id?`id="${id}"`:''}><button class="x" aria-label="Tutup">${ic('close',18)}</button>${html}</div>`;
+  root.classList.add('show');
+  root.querySelector('.modal-bg').onclick = closeModal;
+  root.querySelector('.x').onclick = closeModal;
+  return root.querySelector('.modal');
+}
+function closeModal(){ const r = $('#modal-root'); r.classList.remove('show'); r.innerHTML=''; }
+
+/* ---------- 2. IKON SVG (set garis konsisten) ---------- */
+const IC = {
+  heart:'<path d="M12 20.6C7.3 16.5 3.5 13.3 3.5 9.6a4.6 4.6 0 0 1 8.5-2.5A4.6 4.6 0 0 1 20.5 9.6c0 3.7-3.8 6.9-8.5 11z"/>',
+  heartFill:'<path fill="currentColor" stroke="none" d="M12 20.6C7.3 16.5 3.5 13.3 3.5 9.6a4.6 4.6 0 0 1 8.5-2.5A4.6 4.6 0 0 1 20.5 9.6c0 3.7-3.8 6.9-8.5 11z"/>',
+  key:'<circle cx="8" cy="16" r="3.5"/><path d="M10.5 13.5L20 4M17 7l2.5 2.5M14 10l2 2"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A2.5 2.5 0 0 1 2 12.5V5a2.5 2.5 0 0 1 2.5-2.5H12A2.5 2.5 0 0 1 14.5 5V5"/>',
+  share:'<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/>',
+  camera:'<path d="M22 18.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5v-9A2.5 2.5 0 0 1 4.5 7H8l2-3h4l2 3h3.5A2.5 2.5 0 0 1 22 9.5z"/><circle cx="12" cy="13.5" r="3.8"/>',
+  flip:'<path d="M4 9a8 8 0 0 1 13.9-2.6M20 15a8 8 0 0 1-13.9 2.6"/><path d="M18 2.8V6.5h-3.7M6 21.2V17.5h3.7"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 17.5l4.5-4.5 3 3 4-4 3.5 3.5"/>',
+  frame:'<rect x="4" y="3" width="16" height="18" rx="2.5"/><rect x="8" y="7" width="8" height="9" rx="1"/>',
+  sparkle:'<path d="M12 4l1.7 4.6L18.3 10.3l-4.6 1.7L12 16.6l-1.7-4.6L5.7 10.3l4.6-1.7z"/><path d="M18.6 15.6l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
+  sticker:'<path d="M15.2 3.5H7.5A3.5 3.5 0 0 0 4 7v10a3.5 3.5 0 0 0 3.5 3.5h5.3l7.2-7.2V7z"/><path d="M15.5 20.2V16a1 1 0 0 1 1-1h4.2"/><path d="M8.3 12.4a4.2 4.2 0 0 0 6.9 0"/>',
+  pen:'<path d="M17.3 3.7a2.6 2.6 0 0 1 3.7 3.7L8 20.4 3.2 21.5 4.3 16.7z"/>',
+  palette:'<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.9 2-2 0-.6-.2-1-.6-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A4.7 4.7 0 0 0 21 9.7C20.4 5.9 16.6 3 12 3z"/><circle cx="7.6" cy="11" r="1"/><circle cx="10.4" cy="7.3" r="1"/><circle cx="14.8" cy="7.3" r="1"/>',
+  layout:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 10h18M10 10v11"/>',
+  download:'<path d="M12 4v11m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  refresh:'<path d="M20 12a8 8 0 1 1-2.3-5.6L20 8.5"/><path d="M20 4v4.5h-4.5"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14z"/>',
+  wand:'<path d="M5 19L15 9"/><path d="M15 4l.9 2.1L18 7l-2.1.9L15 10l-.9-2.1L12 7l2.1-.9z"/><path d="M19.5 12.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>',
+  trash:'<path d="M4 7h16M9.5 7V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12"/><path d="M10 11v6M14 11v6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  send:'<path d="M21.5 2.5L10.8 13.2M21.5 2.5L14.5 21l-3.7-7.8L3 9.5z"/>',
+  arrowR:'<path d="M4 12h15m0 0l-5.5-5.5M19 12l-5.5 5.5"/>',
+  arrowL:'<path d="M20 12H5m0 0l5.5-5.5M5 12l5.5 5.5"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M17.4 14.6a6.2 6.2 0 0 1 3.8 5.4"/>',
+  user:'<circle cx="12" cy="8" r="3.8"/><path d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0"/>',
+  pin:'<path d="M12 21s-6.5-5.4-6.5-10a6.5 6.5 0 0 1 13 0c0 4.6-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.2"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  note:'<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9l-5 5H6a2 2 0 0 1-2-2z"/><path d="M15 20v-4a1 1 0 0 1 1-1h4"/>',
+  star:'<path d="M12 3.5l2.5 5.4 5.9.7-4.4 4 1.2 5.9L12 16.6l-5.2 2.9 1.2-5.9-4.4-4 5.9-.7z"/>',
+  logo:'<path fill="currentColor" stroke="none" d="M12 21C7.5 17 4 13.9 4 10.3A4.3 4.3 0 0 1 12 8a4.3 4.3 0 0 1 8 2.3c0 3.6-3.5 6.7-8 10.7z"/>',
+};
+function ic(n, s=18){ return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]||''}</svg>`; }
+// pasang ikon statis berdasar atribut data-ic & data-heart
+ $$('[data-ic]').forEach(el => el.innerHTML = ic(el.dataset.ic, el.dataset.s || 18));
+ $$('[data-heart]').forEach(el => el.innerHTML = `<svg class="ic" width="${el.dataset.s||22}" height="${el.dataset.s||22}" viewBox="0 0 24 24" fill="currentColor">${IC.heartFill}</svg>`);
+ $('#brand-ic').innerHTML = ic('logo',20);
+ $$('.back-home').forEach(b => { b.innerHTML = ic('arrowL'); b.onclick = () => go('landing'); });
+
+/* ---------- 3. TEMA GELAP/TERANG ---------- */
+function applyThemeBtns(){
+  $$('.tgl-theme').forEach(b => { b.innerHTML = ic(document.documentElement.dataset.theme==='dark' ? 'sun' : 'moon', 19); });
+}
+ $$('.tgl-theme').forEach(b => on(b,'click', () => {
+  const d = document.documentElement;
+  d.dataset.theme = d.dataset.theme==='dark' ? 'light' : 'dark';
+  localStorage.setItem('ldrpb_theme', d.dataset.theme);
+  applyThemeBtns(); renderDisplay();
+}));
+document.documentElement.dataset.theme = localStorage.getItem('ldrpb_theme') || 'light';
+applyThemeBtns();
+
+/* ---------- 4. FX: hati melayang (landing) + confetti ---------- */
+const FX = { cv:$('#fx'), ctx:null, parts:[], raf:0, on:false };
+FX.ctx = FX.cv.getContext('2d');
+function fxResize(){ FX.cv.width = innerWidth; FX.cv.height = innerHeight; }
+on(window,'resize', fxResize); fxResize();
+function spawnHeart(x, y){
+  FX.parts.push({x, y, vx:rand(-.25,.25), vy:rand(-.9,-.4), s:rand(6,14), a:1, rot:rand(-.6,.6), vr:rand(-.01,.01), tw:rand(0,6.28), star:Math.random()<.3});
+}
+function fxLoop(){
+  if(!FX.on) return;
+  const c = FX.ctx; c.clearRect(0,0,FX.cv.width,FX.cv.height);
+  const pink = getComputedStyle(document.documentElement).getPropertyValue('--pink').trim();
+  for(const p of FX.parts){
+    p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.tw += .05; p.a -= .0035;
+    c.save(); c.globalAlpha = clamp(p.a,0,1) * (0.55 + .45*Math.sin(p.tw));
+    c.translate(p.x,p.y); c.rotate(p.rot); c.fillStyle = pink;
+    if(p.star){ c.beginPath(); for(let i=0;i<5;i++){ const A=-Math.PI/2+i*1.2566; c.lineTo(Math.cos(A)*p.s,Math.sin(A)*p.s); c.lineTo(Math.cos(A+.628)*p.s*.45,Math.sin(A+.628)*p.s*.45);} c.closePath(); c.fill(); }
+    else { const s=p.s; c.beginPath(); c.moveTo(0,s*.6); c.bezierCurveTo(s*1.1,-s*.5, s*.7,-s*1.1, 0,-s*.35); c.bezierCurveTo(-s*.7,-s*1.1, -s*1.1,-s*.5, 0,s*.6); c.fill(); }
+    c.restore();
+  }
+  FX.parts = FX.parts.filter(p => p.a > 0 && p.y > -30);
+  if(FX.parts.length < 26 && Math.random() < .35) spawnHeart(rand(0,FX.cv.width), FX.cv.height + 12);
+  FX.raf = requestAnimationFrame(fxLoop);
+}
+function startFX(){ FX.on = true; fxLoop(); }
+function stopFX(){ FX.on = false; cancelAnimationFrame(FX.raf); FX.ctx.clearRect(0,0,FX.cv.width,FX.cv.height); }
+on(window,'pointermove', e => { if(FX.on && Math.random()<.25) spawnHeart(e.clientX + rand(-14,14), e.clientY + rand(-10,10)); });
+
+/* confetti hati saat result */
+function confetti(){
+  const cv = $('#confetti'), c = cv.getContext('2d');
+  cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#FF6B9D','#FFC2D1','#FFD9A8','#B79CED','#8FD3B6'];
+  const ps = Array.from({length:90}, () => ({x:rand(0,cv.width), y:rand(-cv.height,0), vy:rand(2,4.5), vx:rand(-1,1), s:rand(5,11), r:rand(0,6.28), vr:rand(-.1,.1), c:pick(cols), heart:Math.random()<.5}));
+  let t = 0;
+  (function loop(){
+    c.clearRect(0,0,cv.width,cv.height); t++;
+    for(const p of ps){
+      p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      c.save(); c.translate(p.x,p.y); c.rotate(p.r); c.fillStyle = p.c;
+      if(p.heart){ const s=p.s; c.beginPath(); c.moveTo(0,s*.6); c.bezierCurveTo(s*1.1,-s*.5,s*.7,-s*1.1,0,-s*.35); c.bezierCurveTo(-s*.7,-s*1.1,-s*1.1,-s*.5,0,s*.6); c.fill(); }
+      else c.fillRect(-p.s/2,-p.s/3,p.s,p.s*.66);
+      c.restore();
+    }
+    if(t < 380) requestAnimationFrame(loop); else c.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+
+/* ---------- 5. DATA DESAIN: helper gambar ---------- */
+function rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function heartPath(ctx,cx,cy,s){ ctx.beginPath(); ctx.moveTo(cx,cy+s*.62); ctx.bezierCurveTo(cx+s*1.15,cy-s*.45, cx+s*.72,cy-s*1.12, cx,cy-s*.38); ctx.bezierCurveTo(cx-s*.72,cy-s*1.12, cx-s*1.15,cy-s*.45, cx,cy+s*.62); ctx.closePath(); }
+function starPath(ctx,cx,cy,s){ ctx.beginPath(); for(let i=0;i<5;i++){ const A=-Math.PI/2+i*1.2566; ctx.lineTo(cx+Math.cos(A)*s,cy+Math.sin(A)*s); ctx.lineTo(cx+Math.cos(A+.628)*s*.45,cy+Math.sin(A+.628)*s*.45);} ctx.closePath(); }
+// ctx.filter mungkin tak didukung (Safari lama) — deteksi sekali
+const FILTER_OK = (()=>{ const c=document.createElement('canvas').getContext('2d'); c.filter='blur(1px)'; return c.filter==='blur(1px)'; })();
+function setF(ctx, f){ try{ ctx.filter = (FILTER_OK && f && f!=='none') ? f : 'none'; }catch(e){} }
+function drawPhoto(ctx,img,filter,x,y,w,h,r=0){
+  ctx.save(); rr(ctx,x,y,w,h,r); ctx.clip();
+  const ir=img.width/img.height, rc=w/h; let sw,sh,sx,sy;
+  if(ir>rc){ sh=img.height; sw=sh*rc; sx=(img.width-sw)/2; sy=0; } else { sw=img.width; sh=sw/rc; sx=0; sy=(img.height-sh)/2; }
+  setF(ctx,filter); ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h); setF(ctx,'none');
+  ctx.restore();
+  if(r>0){ ctx.save(); rr(ctx,x,y,w,h,r); ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=Math.max(2,w*.006); ctx.stroke(); ctx.restore(); }
+}
+function circlePhoto(ctx,img,filter,cx,cy,r){
+  ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,r,0,6.29); ctx.clip();
+  const d=img.width<img.height?img.width:img.height;
+  setF(ctx,filter); ctx.drawImage(img,(img.width-d)/2,(img.height-d)/2,d,d,cx-r,cy-r,r*2,r*2); setF(ctx,'none');
+  ctx.restore();
+}
+function filterStr(id){ const f = FILTERS.find(f=>f[0]===id); return f ? f[2] : 'none'; }
+
+/* ---------- 6. FILTERS ---------- */
+const FILTERS = [
+  ['original','Original','none'],
+  ['vintage','Vintage','sepia(.5) contrast(1.05) brightness(1.05) saturate(.85)'],
+  ['warm','Warm','sepia(.22) saturate(1.35) hue-rotate(-8deg) brightness(1.06)'],
+  ['cool','Cool','saturate(1.12) hue-rotate(12deg) brightness(1.05)'],
+  ['bw','B & W','grayscale(1) contrast(1.12)'],
+  ['film','Film','contrast(1.14) saturate(.85) sepia(.15)'],
+  ['retro','Retro','sepia(.35) contrast(1.1) saturate(1.25) hue-rotate(-10deg)'],
+  ['dreamy','Dreamy','brightness(1.1) contrast(.94) saturate(1.08) blur(.5px)'],
+  ['softpink','Soft Pink','sepia(.18) saturate(1.3) hue-rotate(-16deg) brightness(1.08)'],
+  ['golden','Golden','sepia(.45) saturate(1.4) brightness(1.07) hue-rotate(-12deg)'],
+  ['night','Night','brightness(.82) contrast(1.22) saturate(1.05) hue-rotate(-15deg)'],
+  ['cine','Cinematic','contrast(1.28) saturate(1.12) brightness(.94)'],
+  ['polaroidf','Polaroid','contrast(1.06) saturate(1.12) brightness(1.08) sepia(.12)'],
+];
+
+/* ---------- 7. BACKGROUNDS ---------- */
+function seedRand(seed){ let s=seed; return ()=>{ s=(s*9301+49297)%233280; return s/233280; }; }
+const BGS = [
+  {id:'white',  name:'White',   draw(c,W,H){ c.fillStyle='#FFFFFF'; c.fillRect(0,0,W,H); }},
+  {id:'blush',  name:'Blush',   draw(c,W,H){ c.fillStyle='#FFF0F5'; c.fillRect(0,0,W,H); }},
+  {id:'black',  name:'Black',   draw(c,W,H){ c.fillStyle='#141114'; c.fillRect(0,0,W,H); }},
+  {id:'pinkg',  name:'Pink',    draw(c,W,H){ const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'#FFC2D1'); g.addColorStop(1,'#FF8FB3'); c.fillStyle=g; c.fillRect(0,0,W,H); }},
+  {id:'purple', name:'Purple',  draw(c,W,H){ const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,'#EAD9FF'); g.addColorStop(1,'#C4AEF2'); c.fillStyle=g; c.fillRect(0,0,W,H); }},
+  {id:'sunset', name:'Sunset',  draw(c,W,H){ const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'#FFD9A8'); g.addColorStop(.55,'#FF8FB3'); g.addColorStop(1,'#E5608F'); c.fillStyle=g; c.fillRect(0,0,W,H); }},
+  {id:'night',  name:'Night',   draw(c,W,H){ const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'#232447'); g.addColorStop(1,'#12132A'); c.fillStyle=g; c.fillRect(0,0,W,H); const r=seedRand(7); c.fillStyle='#fff'; for(let i=0;i<80;i++){ c.globalAlpha=r()*.8+.1; c.beginPath(); c.arc(r()*W,r()*H,r()*2.2+.5,0,6.29); c.fill(); } c.globalAlpha=1; }},
+  {id:'stars',  name:'Stars',   draw(c,W,H){ c.fillStyle='#FFF0F5'; c.fillRect(0,0,W,H); const r=seedRand(3); c.fillStyle='#FF8FB3'; for(let i=0;i<46;i++){ starPath(c,r()*W,r()*H,r()*9+4); c.globalAlpha=.5+r()*.5; c.fill(); } c.globalAlpha=1; }},
+  {id:'clouds', name:'Clouds',  draw(c,W,H){ c.fillStyle='#FFF7FA'; c.fillRect(0,0,W,H); c.fillStyle='#fff'; c.strokeStyle='#FFD3E0'; c.lineWidth=3; const r=seedRand(5); for(let i=0;i<9;i++){ const x=r()*W,y=r()*H,s=r()*60+40; c.beginPath(); c.arc(x,y,s*.55,0,6.29); c.arc(x+s*.5,y-s*.22,s*.45,0,6.29); c.arc(x+s,y,s*.5,0,6.29); c.fill(); c.stroke(); } }},
+  {id:'hearts', name:'Hearts',  draw(c,W,H){ c.fillStyle='#FFF0F5'; c.fillRect(0,0,W,H); c.fillStyle='#FFC2D1'; const r=seedRand(9); for(let i=0;i<40;i++){ const s=r()*16+8, x=r()*W, y=r()*H; c.save(); c.translate(x,y); c.rotate(r()*1.2-.6); c.globalAlpha=.35+r()*.4; heartPath(c,0,0,s); c.fill(); c.restore(); } c.globalAlpha=1; }},
+  {id:'flowers',name:'Flowers', draw(c,W,H){ c.fillStyle='#FFF6F0'; c.fillRect(0,0,W,H); const r=seedRand(11); for(let i=0;i<26;i++){ const x=r()*W,y=r()*H,s=r()*14+9; c.globalAlpha=.55; c.fillStyle=pick(['#FFC2D1','#FFD9A8','#E7C6F2']); for(let k=0;k<5;k++){ const A=k*1.2566; c.beginPath(); c.ellipse(x+Math.cos(A)*s,y+Math.sin(A)*s,s*.55,s*.35,A,0,6.29); c.fill(); } c.fillStyle='#fff'; c.beginPath(); c.arc(x,y,s*.3,0,6.29); c.fill(); } c.globalAlpha=1; }},
+  {id:'film',   name:'Film',    draw(c,W,H){ c.fillStyle='#EDE4E0'; c.fillRect(0,0,W,H); const r=seedRand(13); c.fillStyle='rgba(90,60,55,.08)'; for(let i=0;i<900;i++){ c.fillRect(r()*W,r()*H,2,2); } }},
+  {id:'paper',  name:'Paper',   draw(c,W,H){ c.fillStyle='#FFFDFB'; c.fillRect(0,0,W,H); const r=seedRand(17); c.fillStyle='rgba(160,120,110,.06)'; for(let i=0;i<600;i++){ c.fillRect(r()*W,r()*H,1.6,1.6); } }},
+];
+
+/* ---------- 8. LAYOUTS ---------- */
+function polaroidCard(ctx,img,filter,x,y,w,cap,rot,name){
+  const h = w*1.24, cp = h*.16;
+  ctx.save(); ctx.translate(x+w/2,y+h/2); ctx.rotate(rot*Math.PI/180);
+  ctx.shadowColor='rgba(60,20,35,.22)'; ctx.shadowBlur=w*.06; ctx.shadowOffsetY=w*.03;
+  ctx.fillStyle='#fff'; rr(ctx,-w/2,-h/2,w,h,w*.03); ctx.fill();
+  ctx.shadowColor='transparent';
+  drawPhoto(ctx,img,filter,-w/2+w*.055,-h/2+w*.055,w*.89,h-w*.055-cp,w*.02);
+  ctx.fillStyle='#3a2b31'; ctx.font=`600 ${w*.11}px Caveat, cursive`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(name||'', 0, h/2-cp/2);
+  ctx.restore();
+}
+const LAYOUTS = [
+  {id:'side', name:'Side by Side', desc:'Foto kiri + foto kanan', draw(c,W,H,p){
+    const m=W*.06,g=W*.035,w=(W-m*2-g)/2,y=H*.16,h=H*.62;
+    drawPhoto(c,p.a,p.fa,m,y,w,h,w*.02); drawPhoto(c,p.b,p.fb,m+w+g,y,w,h,w*.02);
+  }},
+  {id:'stack', name:'Over & Under', desc:'Foto atas + foto bawah', draw(c,W,H,p){
+    const m=W*.09,w=W*.82,h=(H*.76-W*.03)/2;
+    drawPhoto(c,p.a,p.fa,m,H*.07,w,h,w*.02); drawPhoto(c,p.b,p.fb,m,H*.07+h+W*.03,w,h,w*.02);
+  }},
+  {id:'polaroid', name:'Polaroid Couple', desc:'Dua polaroid bertumpuk', draw(c,W,H,p){
+    const cw=W*.46;
+    polaroidCard(c,p.b,p.fb,W*.47,H*.30,cw,3.2,p.names.b);
+    polaroidCard(c,p.a,p.fa,W*.08,H*.16,cw,-4.5,p.names.a);
+  }},
+  {id:'film', name:'Film Strip', desc:'Seperti gulungan film', draw(c,W,H,p){
+    const x=W*.09,y=H*.1,w=W*.82,h=H*.74;
+    c.save(); c.shadowColor='rgba(40,15,25,.3)'; c.shadowBlur=30; c.shadowOffsetY=10;
+    c.fillStyle='#17131a'; rr(c,x,y,w,h,w*.02); c.fill(); c.restore();
+    c.fillStyle='#fff'; const sw=w*.035;
+    for(let i=0;i<10;i++){ const sx=x+w*.028+i*(w*.099); rr(c,sx,y+h*.03,sw,h*.05,sw*.3); c.fill(); rr(c,sx,y+h*.92-sw,sw,h*.05,sw*.3); c.fill(); }
+    const fw=(w-w*.09)/2, fh=h*.7;
+    drawPhoto(c,p.a,p.fa,x+w*.03,y+h*.145,fw,fh,w*.008);
+    drawPhoto(c,p.b,p.fb,x+w*.06+fw,y+h*.145,fw,fh,w*.008);
+  }},
+  {id:'four', name:'Booth 4 Frame', desc:'Strip photobooth klasik', draw(c,W,H,p){
+    const x=W*.26,w=W*.48,y=H*.05,h=H*.86;
+    c.save(); c.shadowColor='rgba(40,15,25,.28)'; c.shadowBlur=26; c.shadowOffsetY=10;
+    c.fillStyle='#fff'; rr(c,x,y,w,h,w*.015); c.fill(); c.restore();
+    const gap=w*.03, fh=(h-w*.06-gap*3- w*.0)/4, fw=w-w*.06;
+    [[p.a,p.fa],[p.b,p.fb],[p.a,p.fa],[p.b,p.fb]].forEach((d,i)=>{
+      drawPhoto(c,d[0],d[1],x+w*.03,y+w*.03+i*(fh+gap),fw,fh,w*.006);
+    });
+  }},
+  {id:'heart', name:'Heart Shape', desc:'Dua foto dalam satu hati', draw(c,W,H,p){
+    const cx=W/2, cy=H*.5, S=Math.min(W,H)*.30;
+    const half=(img,f,side)=>{ c.save(); heartPath(c,cx,cy,S); c.clip(); c.beginPath(); c.rect(side<0?cx-S*1.4:cx, cy-S*1.4, S*1.4, S*2.8); c.clip(); drawPhoto(c,img,f,cx-S,cy-S,S*2,S*2,0); c.restore(); };
+    half(p.a,p.fa,-1); half(p.b,p.fb,1);
+    c.save(); heartPath(c,cx,cy,S); c.strokeStyle='#fff'; c.lineWidth=W*.012; c.stroke(); c.restore();
+  }},
+  {id:'split', name:'Split Screen', desc:'Diagonal dramatis', draw(c,W,H,p){
+    drawPhoto(c,p.a,p.fa,0,0,W,H,0);
+    c.save(); c.beginPath(); c.moveTo(0,H*.8); c.lineTo(W,H*.3); c.lineTo(W,H); c.lineTo(0,H); c.closePath(); c.clip();
+    drawPhoto(c,p.b,p.fb,0,0,W,H,0); c.restore();
+    c.strokeStyle='#fff'; c.lineWidth=W*.014; c.beginPath(); c.moveTo(0,H*.8); c.lineTo(W,H*.3); c.stroke();
+  }},
+  {id:'distance', name:'Long Distance', desc:'Dua kota, satu hati', draw(c,W,H,p){
+    const r=W*.185;
+    const A={x:W*.28,y:H*.30}, B={x:W*.72,y:H*.66};
+    circlePhoto(c,p.a,p.fa,A.x,A.y,r); circlePhoto(c,p.b,p.fb,B.x,B.y,r);
+    c.strokeStyle='var'; c.strokeStyle='#FF6B9D'; c.lineWidth=W*.008; c.setLineDash([W*.02,W*.022]); c.lineCap='round';
+    c.beginPath(); c.moveTo(A.x+r*.9,A.y); c.bezierCurveTo(W*.55,H*.24,W*.45,H*.74,B.x-r*.9,B.y); c.stroke(); c.setLineDash([]);
+    c.fillStyle='#FF6B9D'; heartPath(c,W*.5,H*.47,W*.045); c.fill();
+    c.fillStyle='#3a2b31'; c.textAlign='center';
+    c.font=`600 ${W*.036}px Caveat, cursive`;
+    c.fillText(p.names.a, A.x, A.y+r+W*.055);
+    c.fillText(p.names.b, B.x, B.y+r+W*.055);
+  }},
+];
+
+/* ---------- 9. FRAMES ---------- */
+function fBorder(c,W,H,col,w2,inset=0){ c.strokeStyle=col; c.lineWidth=w2; rr(c,inset,inset,W-inset*2,H-inset*2,Math.max(6,W*.02)); c.stroke(); }
+const FRAMES = [
+  // ROMANTIC
+  {id:'pinkheart',cat:'Romantic',name:'Pink Heart',draw(c,W,H){ fBorder(c,W,H,'#FFC2D1',W*.045); fBorder(c,W,H,'#FF8FB3',W*.012,W*.05); c.fillStyle='#FF6B9D'; heartPath(c,W/2,H*.052,W*.035); c.fill(); heartPath(c,W/2,H*.955,W*.03); c.fill(); }},
+  {id:'redheart',cat:'Romantic',name:'Red Heart',draw(c,W,H){ fBorder(c,W,H,'#E5484D',W*.045); c.fillStyle='#E5484D'; heartPath(c,W/2,H*.052,W*.038); c.fill(); c.fillStyle='#FFC2D1'; heartPath(c,W/2,H*.955,W*.028); c.fill(); }},
+  {id:'loveletter',cat:'Romantic',name:'Love Letter',draw(c,W,H){ fBorder(c,W,H,'#F3E3CE',W*.05); fBorder(c,W,H,'#C89B6D',W*.008,W*.058); const s=W*.11; c.strokeStyle='#C89B6D'; c.lineWidth=W*.008; c.setLineDash([W*.014,W*.012]); rr(c,W-s-W*.05,H*.045,s,s,W*.012); c.stroke(); c.setLineDash([]); c.fillStyle='#E5484D'; heartPath(c,W-s/2-W*.05,H*.045+s/2,s*.28); c.fill(); }},
+  {id:'forever',cat:'Romantic',name:'Forever',draw(c,W,H){ fBorder(c,W,H,'#3a2b31',W*.014); fBorder(c,W,H,'#3a2b31',W*.005,W*.028); c.strokeStyle='#FF6B9D'; c.lineWidth=W*.008; heartPath(c,W/2,H*.055,W*.03); c.stroke(); }},
+  {id:'couple',cat:'Romantic',name:'Couple',draw(c,W,H){ fBorder(c,W,H,'#FF8FB3',W*.04); c.fillStyle='#FF6B9D'; heartPath(c,W*.14,H*.055,W*.026); c.fill(); c.fillStyle='#E5484D'; heartPath(c,W*.22,H*.055,W*.026); c.fill(); }},
+  // CUTE
+  {id:'bear',cat:'Cute',name:'Bear',draw(c,W,H){ fBorder(c,W,H,'#D9A87C',W*.04); const ex=W*.1,ey=H*.055; c.fillStyle='#C89060'; c.beginPath(); c.arc(ex-W*.03,ey-W*.03,W*.022,0,6.29); c.arc(ex+W*.03,ey-W*.03,W*.022,0,6.29); c.fill(); c.fillStyle='#D9A87C'; c.beginPath(); c.arc(ex,ey,W*.033,0,6.29); c.fill(); c.fillStyle='#3a2b31'; c.beginPath(); c.arc(ex-W*.012,ey,W*.004,0,6.29); c.arc(ex+W*.012,ey,W*.004,0,6.29); c.fill(); }},
+  {id:'bunny',cat:'Cute',name:'Bunny',draw(c,W,H){ fBorder(c,W,H,'#F6C8DC',W*.04); const ex=W*.9; c.fillStyle='#fff'; c.strokeStyle='#F6C8DC'; c.lineWidth=W*.008; [[-.028,-1],[.028,1]].forEach(([o])=>{ c.save(); c.translate(ex+o*W,H*.05); c.rotate(o*8); rr(c,-W*.016,-H*.075,W*.032,H*.11,W*.016); c.fill(); c.stroke(); c.restore(); }); }},
+  {id:'cat',cat:'Cute',name:'Cat',draw(c,W,H){ fBorder(c,W,H,'#C9B6E4',W*.04); const ex=W*.09; c.fillStyle='#C9B6E4'; c.beginPath(); c.moveTo(ex-W*.045,H*.03); c.lineTo(ex-W*.012,H*.085); c.lineTo(ex-W*.062,H*.085); c.closePath(); c.fill(); c.beginPath(); c.moveTo(ex+W*.045,H*.03); c.lineTo(ex+W*.012,H*.085); c.lineTo(ex+W*.062,H*.085); c.closePath(); c.fill(); }},
+  {id:'cloud',cat:'Cute',name:'Cloud',draw(c,W,H){ fBorder(c,W,H,'#BFE0F5',W*.035); c.fillStyle='#fff'; c.strokeStyle='#BFE0F5'; c.lineWidth=W*.008; for(let i=0;i<4;i++){ const x=W*(.2+i*.2); c.beginPath(); c.arc(x,H*.028,W*.045,0,6.29); c.fill(); c.stroke(); } }},
+  {id:'starf',cat:'Cute',name:'Star',draw(c,W,H){ fBorder(c,W,H,'#FFD98E',W*.04); c.fillStyle='#FFC95C'; [[.1,.06],[.9,.06],[.1,.94],[.9,.94]].forEach(([x,y])=>{ starPath(c,W*x,H*y,W*.03); c.fill(); }); }},
+  // MINIMAL
+  {id:'white',cat:'Minimal',name:'White',draw(c,W,H){ fBorder(c,W,H,'#FFFFFF',W*.06); }},
+  {id:'blackf',cat:'Minimal',name:'Black',draw(c,W,H){ fBorder(c,W,H,'#141114',W*.05); }},
+  {id:'beige',cat:'Minimal',name:'Beige',draw(c,W,H){ fBorder(c,W,H,'#EFE3D3',W*.055); }},
+  {id:'simple',cat:'Minimal',name:'Simple Border',draw(c,W,H){ fBorder(c,W,H,'#FF6B9D',W*.008,W*.03); }},
+  // VINTAGE
+  {id:'filmf',cat:'Vintage',name:'Film',draw(c,W,H){ fBorder(c,W,H,'#17131a',W*.05); c.fillStyle='#fff'; for(let i=0;i<12;i++){ const s=W*.026; rr(c,W*.03+i*(W*.081),H*.012,s,s*.7,s*.25); c.fill(); rr(c,W*.03+i*(W*.081),H*.98-s,s,s*.7,s*.25); c.fill(); } }},
+  {id:'polaroidf',cat:'Vintage',name:'Polaroid',draw(c,W,H){ c.fillStyle='#fff'; c.fillRect(0,0,W,H*.035); c.fillRect(0,0,W*.035,H); c.fillRect(W*.965,0,W*.035,H); c.fillRect(0,H*.86,W,H*.14); c.strokeStyle='rgba(0,0,0,.08)'; c.lineWidth=2; c.strokeRect(W*.035,H*.035,W*.93,H*.825); }},
+  {id:'retro',cat:'Vintage',name:'Retro Camera',draw(c,W,H){ fBorder(c,W,H,'#8C6B4F',W*.05); c.fillStyle='#5C4331'; c.beginPath(); c.arc(W*.085,H*.085,W*.045,0,6.29); c.fill(); c.fillStyle='#BFD9E8'; c.beginPath(); c.arc(W*.085,H*.085,W*.026,0,6.29); c.fill(); }},
+  {id:'oldfilm',cat:'Vintage',name:'Old Film',draw(c,W,H){ fBorder(c,W,H,'#4a3a30',W*.03); c.strokeStyle='rgba(74,58,48,.5)'; c.lineWidth=W*.004; c.setLineDash([W*.02,W*.016]); rr(c,W*.045,W*.045,W*.91,H*.91,4); c.stroke(); c.setLineDash([]); }},
+  // SPECIAL
+  {id:'anniv',cat:'Special',name:'Anniversary',draw(c,W,H){ fBorder(c,W,H,'#C9A24B',W*.035); c.fillStyle='#C9A24B'; c.font=`italic 600 ${W*.034}px Fraunces, serif`; c.textAlign='center'; c.fillText('Happy Anniversary', W/2, H*.05); }},
+  {id:'valentine',cat:'Special',name:"Valentine's",draw(c,W,H){ fBorder(c,W,H,'#E5484D',W*.04); c.fillStyle='#FF8FB3'; for(let i=0;i<10;i++){ heartPath(c,W*(.1+i*.089),H*.025,W*.016); c.fill(); heartPath(c,W*(.144+i*.089),H*.975,W*.016); c.fill(); } }},
+  {id:'birthday',cat:'Special',name:'Birthday',draw(c,W,H){ fBorder(c,W,H,'#B79CED',W*.04); const cols=['#FF6B9D','#FFC95C','#8FD3B6','#B79CED']; const r=seedRand(21); for(let i=0;i<26;i++){ c.fillStyle=cols[i%4]; c.save(); c.translate(r()*W, r()<.5?r()*H*.06:H-r()*H*.06); c.rotate(r()*3); c.fillRect(-W*.008,-W*.004,W*.016,W*.008); c.restore(); } }},
+  {id:'datenight',cat:'Special',name:'Date Night',draw(c,W,H){ fBorder(c,W,H,'#2A2438',W*.05); c.fillStyle='#FFD98E'; [[.12,.05,.024],[.88,.05,.02],[.12,.95,.02],[.88,.95,.024],[.5,.03,.016]].forEach(([x,y,s])=>{ starPath(c,W*x,H*y,W*s); c.fill(); }); }},
+  {id:'ldr',cat:'Special',name:'LDR',draw(c,W,H){ fBorder(c,W,H,'#fff',W*.055); fBorder(c,W,H,'#FF6B9D',W*.006,W*.062); c.strokeStyle='#FF6B9D'; c.lineWidth=W*.006; c.setLineDash([W*.016,W*.014]); c.beginPath(); c.moveTo(W*.36,H*.05); c.lineTo(W*.64,H*.05); c.stroke(); c.setLineDash([]); c.fillStyle='#FF6B9D'; heartPath(c,W*.32,H*.05,W*.022); c.fill(); heartPath(c,W*.68,H*.05,W*.022); c.fill(); }},
+];
+
+/* ---------- 10. STATE ROOM & SINKRONISASI (BroadcastChannel) ---------- */
+const R = { code:null, role:null, solo:false, nameA:'', nameB:'', theme:'romantic',
+            citiesA:'', citiesB:'', nextMeet:'', photoA:null, photoB:null, partnerOn:false,
+            timer:3, auto:false, soloTarget:'A', lastSeen:0 };
+const CH = { ch:null, alive:false,
+  open(code){ this.close(); this.ch = new BroadcastChannel('ldrpb_'+code);
+    this.ch.onmessage = e => handleMsg(e.data); this.alive = true;
+    this._ping = setInterval(()=>{ if(!R.solo){ send('ping'); if(R.partnerOn && Date.now()-R.lastSeen > 8000){ R.partnerOn=false; updateRoomUI(); } } }, 2500);
+  },
+  close(){ if(this.ch) this.ch.close(); if(this._ping) clearInterval(this._ping); this.ch=null; this.alive=false; }
+};
+function send(t, data={}){ if(CH.ch) try{ CH.ch.postMessage({t, role:R.role, ...data}); }catch(e){} }
+function handleMsg(m){
+  if(m.role === R.role) return;
+  if(m.t==='ping'){ R.lastSeen = Date.now(); if(!R.partnerOn){ R.partnerOn=true; updateRoomUI(); toast('Pasanganmu terhubung!','heartFill'); } return; }
+  if(m.t==='joined'){ R.lastSeen=Date.now(); R.partnerOn=true; updateRoomUI(); send('welcome',{photoA:R.photoA}); toast('Your partner has joined the room','heartFill'); return; }
+  if(m.t==='welcome'){ R.lastSeen=Date.now(); R.partnerOn=true; if(m.photoA) setPhoto('A', m.photoA, false); updateRoomUI(); return; }
+  if(m.t==='photo'){ setPhoto(m.role, m.url, false); toast(m.role==='A' ? R.nameA||'Pasangan' : R.nameB||'Pasangan'+' sudah kirim foto!','camera'); return; }
+  if(m.t==='note'){ addNoteBubble(m.from, m.text); toast('Love note baru dari pasanganmu!','note'); return; }
+  if(m.t==='bye'){ R.partnerOn=false; updateRoomUI(); }
+}
+function genCode(){ const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++) s+=A[Math.floor(Math.random()*A.length)]; return 'LOVE-'+s; }
+function persist(){ if(!R.code) return; try{ localStorage.setItem('ldrpb_'+R.code, JSON.stringify({...R, role:R.role, lastSeen:0})); }catch(e){} }
+function loadRoom(code){ try{ const d=JSON.parse(localStorage.getItem('ldrpb_'+code)); return d && d.code===code ? d : null; }catch(e){ return null; } }
+function setPhoto(role, url, broadcast=true){
+  R['photo'+role] = url; persist();
+  if(broadcast) send('photo',{url, role});
+  updateRoomUI();
+  if(R.photoA && R.photoB){ setTimeout(()=>{ if($('#s-room').classList.contains('active')) toast('Kedua foto sudah siap!','sparkle'); }, 400); }
+}
+function bothReady(){ return !!(R.photoA && R.photoB); }
+function todayStr(){ const d=new Date(); const BULAN=['January','February','March','April','May','June','July','August','September','October','November','December']; return `${String(d.getDate()).padStart(2,'0')} ${BULAN[d.getMonth()]} ${d.getFullYear()}`; }
+
+/* ---------- 11. KAMERA ---------- */
+const Cam = { stream:null, facing:'user', video:null,
+  async attach(video){
+    this.video = video;
+    try{
+      this.stop();
+      this.stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:this.facing, width:{ideal:1280} }, audio:false });
+      video.srcObject = this.stream; await video.play();
+      $('#cam-me-empty').style.display='none';
+      $('#cam-err').style.display='none';
+      $('#btn-flip').style.display='';
+      return true;
+    }catch(e){
+      $('#cam-me-empty').style.display='';
+      $('#cam-me-msg').textContent = 'Kamera tidak dapat diakses';
+      $('#cam-err').style.display='flex';
+      $('#cam-err-msg').textContent = 'Tidak bisa membuka kamera — periksa izin browser.';
+      $('#btn-flip').style.display='none';
+      return false;
+    }
+  },
+  stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
+  async flip(){ this.facing = this.facing==='user' ? 'environment' : 'user'; if(this.video) await this.attach(this.video); },
+  grab(w=720,h=900){
+    if(!this.stream) return null;
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    const x = c.getContext('2d');
+    const vw=this.video.videoWidth, vh=this.video.videoHeight;
+    const rc=w/h, ir=vw/vh; let sw,sh,sx,sy;
+    if(ir>rc){ sh=vh; sw=sh*rc; sx=(vw-sw)/2; sy=0; } else { sw=vw; sh=sw/rc; sx=0; sy=(vh-sh)/2; }
+    if(this.facing==='user'){ x.translate(w,0); x.scale(-1,1); }
+    x.drawImage(this.video,sx,sy,sw,sh,0,0,w,h);
+    return c.toDataURL('image/jpeg',.88);
+  }
+};
+on(window,'beforeunload', ()=>{ Cam.stop(); send('bye'); });
+
+/* ---------- 12. NAVIGASI LAYAR ---------- */
+function go(id){
+  $$('.screen').forEach(s=>s.classList.remove('active'));
+  $('#s-'+id).classList.add('active');
+  window.scrollTo({top:0});
+  if(id==='landing') startFX(); else stopFX();
+  if(id==='room'){ enterRoom(); }
+  if(id==='layouts'){ buildLayoutGrid($('#layout-grid'), true); }
+  if(id==='editor'){ Editor.enter(); }
+  if(id!=='room' && id!=='editor'){ Cam.stop(); }
+}
+ $('#btn-go-create').onclick = ()=>go('create');
+ $('#btn-go-join').onclick  = ()=>go('join');
+
+/* ---------- 13. CREATE ROOM ---------- */
+const THEMES = [
+  ['romantic','Romantic'],['cute','Cute'],['minimalist','Minimalist'],['pinklove','Pink Love'],
+  ['sunset','Sunset'],['darkromance','Dark Romance'],['anniversary','Anniversary'],['valentine',"Valentine's"],['custom','Custom'],
+];
+const THEME_PRESET = {
+  romantic:{bg:'blush',frame:'pinkheart',filter:'softpink'},
+  cute:{bg:'clouds',frame:'bear',filter:'dreamy'},
+  minimalist:{bg:'white',frame:'simple',filter:'original'},
+  pinklove:{bg:'pinkg',frame:'couple',filter:'softpink'},
+  sunset:{bg:'sunset',frame:'forever',filter:'golden'},
+  darkromance:{bg:'black',frame:'redheart',filter:'cine'},
+  anniversary:{bg:'paper',frame:'anniv',filter:'warm'},
+  valentine:{bg:'hearts',frame:'valentine',filter:'warm'},
+  custom:{bg:'blush',frame:'pinkheart',filter:'original'},
+};
+let selTheme = 'romantic';
+THEMES.forEach(([id,label])=>{
+  const b = document.createElement('button'); b.className='chip'+(id===selTheme?' on':''); b.textContent=label;
+  b.onclick = ()=>{ selTheme=id; $$('#theme-chips .chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); };
+  $('#theme-chips').appendChild(b);
+});
+ $('#btn-create').onclick = ()=>{
+  const a = $('#in-nameA').value.trim(), b = $('#in-nameB').value.trim();
+  if(!a || !b){ toast('Isi nama kamu dan pasanganmu dulu','heartFill'); return; }
+  Object.assign(R, { code:genCode(), role:'A', solo:false, nameA:a, nameB:b, theme:selTheme, photoA:null, photoB:null, partnerOn:false, noteA:[], noteB:[] });
+  persist(); CH.open(R.code);
+  $('#create-form-card').style.display='none';
+  $('#create-result-card').style.display='block';
+  $('#room-code').textContent = R.code;
+  updateJoinStatus();
+  toast('Room dibuat! Kode: '+R.code,'sparkle');
+};
+function updateJoinStatus(){
+  const st = $('#join-status'), btn = $('#btn-to-camera');
+  if(R.solo){ st.innerHTML = `<span class="dot"></span>Mode Solo — kamu akan mengambil kedua foto`; btn.style.display='flex'; }
+  else if(R.partnerOn){ st.innerHTML = `<span class="dot"></span>Your partner has joined the room`; btn.style.display='flex'; }
+  else { st.innerHTML = `<span class="dot wait pulse"></span>Menunggu pasangan bergabung...`; btn.style.display='none'; }
+}
+ $('#btn-copy-code').onclick = async ()=>{
+  try{ await navigator.clipboard.writeText(R.code); toast('Kode disalin: '+R.code,'copy'); }
+  catch(e){ toast('Kode: '+R.code,'copy'); }
+};
+ $('#btn-share-code').onclick = ()=>{
+  const link = location.origin + location.pathname + '?room=' + R.code;
+  const text = `Gabung photobooth kita! Buka LDR Booth dan masukkan kode ${R.code}`;
+  if(navigator.share){ navigator.share({title:'LDR Booth', text, url:link}).catch(()=>{}); }
+  else openShareChoices(text, link);
+};
+function openShareChoices(text, link){
+  const m = openModal(`<h3>Bagikan Kode</h3><p class="msub">Pilih cara berbagi kenangan ini.</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn ghost" id="sh-copy">${ic('copy')} Copy Link</button>
+      <a class="btn ghost" href="https://wa.me/?text=${encodeURIComponent(text+' '+link)}" target="_blank" rel="noopener" style="text-decoration:none">${ic('send')} Share to WhatsApp</a>
+      <button class="btn" id="sh-dl">${ic('download')} Download Photo</button>
+    </div>`);
+  m.querySelector('#sh-copy').onclick = async ()=>{ try{ await navigator.clipboard.writeText(link); toast('Link disalin','copy'); }catch(e){ toast(link,'copy'); } };
+  m.querySelector('#sh-dl').onclick = ()=>{ closeModal(); downloadResult('png'); };
+}
+ $('#btn-to-camera').onclick = ()=>go('room');
+ $('#btn-solo').onclick = ()=>{
+  R.solo = true; persist(); updateJoinStatus();
+  toast('Mode Solo aktif — ambil kedua foto di perangkat ini','user');
+};
+
+/* ---------- 14. JOIN ROOM ---------- */
+const inCode = $('#in-code');
+on(inCode,'input', ()=>{ inCode.value = inCode.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4); });
+// prefill dari URL (?room=LOVE-XXXX)
+const urlRoom = new URLSearchParams(location.search).get('room');
+if(urlRoom){ go('join'); inCode.value = urlRoom.replace('LOVE-','').toUpperCase(); }
+ $('#btn-join').onclick = ()=>{
+  const code = 'LOVE-' + inCode.value;
+  const err = $('#join-err');
+  const room = loadRoom(code);
+  if(!room || !room.code){
+    err.textContent = 'Kode tidak ditemukan di perangkat ini. Untuk demo ini, buka room di tab/jendela lain pada perangkat yang sama — atau buat room baru.';
+    err.classList.add('show'); return;
+  }
+  err.classList.remove('show');
+  Object.assign(R, room, { role:'B', solo:false, partnerOn:false });
+  CH.open(code); send('joined'); persist();
+  toast('Berhasil gabung ke room '+code,'heartFill');
+  go('room');
+};
+
+/* ---------- 15. LAYAR ROOM (kamera, status, love note, meta) ---------- */
+function initials(n){ return (n||'?').trim().charAt(0).toUpperCase(); }
+let camStarting = false;
+async function enterRoom(){
+  $('#room-head-code').textContent = R.code + (R.solo ? ' · MODE SOLO' : '');
+  $('#avA').textContent = initials(R.nameA); $('#avB').textContent = initials(R.nameB);
+  $('#pair-names').innerHTML = `${esc(R.nameA)} <span class="hbeat">${ic('heartFill',22)}</span> ${esc(R.nameB)}`;
+  $('#solo-target').style.display = R.solo ? 'flex' : 'none';
+  $('#solo-ta').textContent = 'Foto ' + R.nameA; $('#solo-tb').textContent = 'Foto ' + R.nameB;
+  updateMetaStrip(); updateRoomUI(); renderNotes();
+  if(!camStarting){ camStarting = true; await Cam.attach($('#vid-me')); camStarting = false; }
+}
+function updateMetaStrip(){
+  const el = $('#meta-strip');
+  let parts = [];
+  if(R.citiesA && R.citiesB) parts.push(`${esc(R.citiesA)} ${ic('heartFill',13)} ${esc(R.citiesB)}`);
+  const d = nextMeetDays();
+  if(d !== null) parts.push(`${ic('calendar',14)} Next meet dalam <b style="color:var(--pink)">&nbsp;${d} hari</b>`);
+  el.innerHTML = parts.join('<span style="opacity:.4">·</span>') +
+    ` <button id="btn-edit-meta" aria-label="Ubah info">${ic('pen',14)}</button>`;
+  $('#btn-edit-meta').onclick = metaModal;
+}
+function nextMeetDays(){
+  if(!R.nextMeet) return null;
+  const diff = Math.ceil((new Date(R.nextMeet+'T00:00:00') - new Date(new Date().toDateString()))/86400000);
+  return diff >= 0 ? diff : null;
+}
+function metaModal(){
+  const m = openModal(`<h3>Detail Kita</h3><p class="msub">Kota dan tanggal pertemuan berikutnya — tampil di ruang photobooth.</p>
+    <label class="field"><span>Kota Kamu</span><input class="input" id="m-ca" maxlength="24" value="${esc(R.citiesA)}" placeholder="cth. Mataram"></label>
+    <label class="field"><span>Kota Pasangan</span><input class="input" id="m-cb" maxlength="24" value="${esc(R.citiesB)}" placeholder="cth. Jakarta"></label>
+    <label class="field"><span>Tanggal Pertemuan Berikutnya</span><input class="input" id="m-nm" type="date" value="${R.nextMeet||''}"></label>
+    <button class="btn" style="width:100%" id="m-save">${ic('check')} Simpan</button>`);
+  m.querySelector('#m-save').onclick = ()=>{
+    R.citiesA = m.querySelector('#m-ca').value.trim();
+    R.citiesB = m.querySelector('#m-cb').value.trim();
+    R.nextMeet = m.querySelector('#m-nm').value;
+    persist(); updateMetaStrip(); closeModal(); toast('Tersimpan','check');
+  };
+}
+function updateRoomUI(){
+  const chip = $('#conn-chip');
+  if(R.solo){ chip.innerHTML = `<span class="dot"></span>Mode Solo`; }
+  else if(R.partnerOn){ chip.innerHTML = `<span class="dot pulse"></span>Connected`; }
+  else { chip.innerHTML = `<span class="dot wait pulse"></span>Menunggu pasangan…`; }
+  // panel pasangan
+  const pv = $('#partner-view');
+  const pPhoto = R.role==='A' ? R.photoB : R.photoA;
+  if(pPhoto){
+    if(!pv.querySelector('img')){ pv.innerHTML=''; const im=document.createElement('img'); im.className='ph'; pv.appendChild(im); }
+    pv.querySelector('img').src = pPhoto;
+  } else {
+    pv.innerHTML = `<div class="cam-empty"><div class="big-ic">${ic('users')}</div><span>${R.solo ? 'Slot foto pasangan — aktifkan Mode Solo di bawah' : (R.partnerOn ? 'Partner is ready' : 'Waiting for your partner...')}</span></div>`;
+  }
+  // foto sendiri
+  const my = R.role==='A' ? R.photoA : R.photoB;
+  $('#my-photo').style.display = my ? 'flex' : 'none';
+  if(my) $('#my-photo-img').src = my;
+  $('#shoot-label').textContent = bothReady() ? 'FOTO ULANG' : 'TAKE PHOTO';
+  // CTA ke layout
+  if(bothReady()){
+    const cta = $('#btn-shoot');
+    cta.classList.add('pulse');
+    if(!$('#btn-go-layouts')){
+      const b = document.createElement('button');
+      b.className='btn big'; b.id='btn-go-layouts';
+      b.innerHTML = `${ic('sparkle')} Susun Foto Kita`;
+      b.onclick = ()=>go('layouts');
+      b.style.cssText='width:100%;animation:ctaP 1.6s infinite';
+      cta.insertAdjacentElement('afterend', b);
+    }
+  }
+}
+ $('#btn-room-back').onclick = ()=>go(R.role==='B' ? 'join' : 'create');
+// timer & auto
+ $$('#timer-seg button').forEach(b=>on(b,'click',()=>{
+  R.timer = +b.dataset.t; $$('#timer-seg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+}));
+ $('#auto-cap').onclick = function(){ R.auto = !R.auto; this.classList.toggle('on', R.auto); };
+ $$('#solo-target button').forEach(b=>on(b,'click',()=>{
+  R.soloTarget = b.dataset.r; $$('#solo-target button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+}));
+ $('#btn-flip').onclick = ()=>Cam.flip();
+ $('#btn-cam-retry').onclick = ()=>Cam.attach($('#vid-me'));
+ $('#btn-demo').onclick = ()=>loadDemoPhoto();
+ $('#btn-my-retake').onclick = ()=>takePhotoFlow();
+function loadDemoPhoto(target){
+  target = target || (R.solo ? R.soloTarget : R.role);
+  const seeds = ['ldrlove'+Math.floor(Math.random()*999), 'ldrcouple'+Math.floor(Math.random()*999)];
+  const im1 = new Image(); im1.crossOrigin='anonymous';
+  im1.onload = ()=>{
+    const c=document.createElement('canvas'); c.width=720; c.height=900;
+    c.getContext('2d').drawImage(im1,0,0,720,900);
+    setPhoto(target, c.toDataURL('image/jpeg',.88));
+    toast('Foto demo dipakai untuk slot '+(target==='A'?R.nameA:R.nameB),'image');
+  };
+  im1.src = `https://picsum.photos/seed/${seeds[0]}/720/900.jpg`;
+}
+// ambil foto: countdown → flash → capture
+async function takePhotoFlow(){
+  if(!Cam.stream){ const ok = await Cam.attach($('#vid-me')); if(!ok) return; }
+  for(let i=R.timer; i>0; i--){
+    const cd = $('#countdown'); cd.querySelector('span').textContent = i;
+    cd.classList.remove('show'); void cd.offsetWidth; cd.classList.add('show');
+    await new Promise(r=>setTimeout(r,1000));
+  }
+  $('#countdown').classList.remove('show');
+  const fl = $('#flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+  const url = Cam.grab(); if(!url){ toast('Gagal mengambil foto','close'); return; }
+  if(R.auto) usePhoto(url);
+  else openPhotoPreview(url);
+}
+function openPhotoPreview(url){
+  const m = openModal(`<h3>Foto kamu</h3><p class="msub">Sudah pas? Kirim ke ruang photobooth.</p>
+    <img src="${url}" style="width:100%;border-radius:14px;margin-bottom:16px">
+    <div style="display:flex;gap:10px"><button class="btn ghost" style="flex:1" id="pv-retake">${ic('refresh')} Retake</button>
+    <button class="btn" style="flex:1" id="pv-use">${ic('heartFill')} Use Photo</button></div>`);
+  m.querySelector('#pv-retake').onclick = ()=>{ closeModal(); takePhotoFlow(); };
+  m.querySelector('#pv-use').onclick = ()=>{ closeModal(); usePhoto(url); };
+}
+function usePhoto(url){
+  const target = R.solo ? R.soloTarget : R.role;
+  setPhoto(target, url, !R.solo);
+  toast(target===(R.solo?R.soloTarget:R.role) && R.solo ? 'Foto disimpan ke slot '+target : 'Foto terkirim ke pasanganmu','check');
+}
+// love note
+ $('#btn-send-note').onclick = sendNote;
+ $('#in-note').addEventListener('keydown', e=>{ if(e.key==='Enter') sendNote(); });
+function sendNote(){
+  const v = $('#in-note').value.trim(); if(!v) return;
+  $('#in-note').value='';
+  if(!R.solo) send('note',{from:R.role, text:v});
+  addNoteBubble(R.role, v); toast('Love note terkirim','send');
+}
+function addNoteBubble(from, text){
+  const feed = $('#note-feed');
+  const d = document.createElement('div'); d.className='note-bub';
+  const me = from === R.role;
+  d.innerHTML = `<b>${me ? 'Kamu' : 'Pasangan'}</b>${esc(text)}`;
+  feed.appendChild(d);
+  while(feed.children.length > 3) feed.firstChild.remove();
+}
+function renderNotes(){}
+
+/* ---------- 16. EDITOR: ENGINE CANVAS ---------- */
+const Editor = {
+  W:1080, H:1350, tab:'photos', dirty:true, base:null, bctx:null,
+  state:{ layout:'side', frame:'pinkheart', filterA:'original', filterB:'original', bg:'blush',
+          dateText:'Since 2024', dateColor:'#FF6B9D', stickers:[], texts:[] },
+  sel:null, // {kind:'sticker'|'text', i}
+  imgA:null, imgB:null,
+  enter(){
+    this.W = 1080; this.H = 1350;
+    $('#ed-code').textContent = R.code;
+    this.imgA = this.imgB = null;
+    const load = (url,cb)=>{ const im=new Image(); im.onload=()=>cb(im); im.src=url; };
+    load(R.photoA, im=>{ this.imgA=im; this.dirty=true; renderDisplay(); });
+    load(R.photoB, im=>{ this.imgB=im; this.dirty=true; renderDisplay(); });
+    this.base = document.createElement('canvas'); this.bctx = this.base.getContext('2d');
+    this.sel = null; this.tab = 'photos';
+    buildRail(); buildBottomNav(); setTab('photos'); markBase(); renderDisplay();
+  },
+  photoProps(){
+    return { a:this.imgA, b:this.imgB, fa:filterStr(this.state.filterA), fb:filterStr(this.state.filterB),
+             names:{a:R.nameA, b:R.nameB} };
+  },
+  u(){ return Math.min(this.W,this.H)/1080; } // unit skala dekorasi
+};
+const ED = Editor;
+
+function paintStatic(ctx, W, H, st, imgA, imgB){
+  const bg = BGS.find(b=>b.id===st.bg) || BGS[1];
+  bg.draw(ctx,W,H);
+  const lay = LAYOUTS.find(l=>l.id===st.layout) || LAYOUTS[0];
+  lay.draw(ctx,W,H,{ a:imgA, b:imgB, fa:filterStr(st.filterA), fb:filterStr(st.filterB), names:{a:R.nameA,b:R.nameB} });
+  const fr = FRAMES.find(f=>f.id===st.frame);
+  if(fr && fr.id!=='none') fr.draw(ctx,W,H);
+  // Our Date di bawah tengah
+  if(st.dateText){
+    const u = Math.min(W,H)/1080;
+    ctx.font = `600 ${46*u}px Caveat, cursive`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle = st.dateColor;
+    ctx.fillText(st.dateText, W/2, H - 62*u - (fr&&fr.id==='polaroidf' ? H*.1 : 0));
+  }
+}
+function paintElems(ctx, W, H, st, withSel){
+  const u = Math.min(W,H)/1080;
+  // stiker (emoji)
+  for(const s of st.stickers){
+    ctx.save(); ctx.translate(s.fx*W, s.fy*H); ctx.rotate(s.rot*Math.PI/180);
+    ctx.font = `${s.s*Math.min(W,H)}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(40,15,25,.25)'; ctx.shadowBlur=14*u; ctx.shadowOffsetY=5*u;
+    ctx.fillText(s.emoji, 0, 0);
+    ctx.restore();
+  }
+  // teks
+  for(const t of st.texts){
+    const size = t.s*Math.min(W,H);
+    ctx.save(); ctx.translate(t.fx*W, t.fy*H); ctx.rotate((t.rot||0)*Math.PI/180);
+    ctx.font = `${t.italic?'italic ':''}${t.bold?'700':'500'} ${size}px ${t.font}`;
+    ctx.textAlign = t.align || 'center'; ctx.textBaseline='middle';
+    if(t.shadow){ ctx.shadowColor='rgba(30,10,20,.4)'; ctx.shadowBlur=16*u; ctx.shadowOffsetY=6*u; }
+    ctx.fillStyle = t.color;
+    const lines = String(t.str).split('\n');
+    lines.forEach((ln,i)=> ctx.fillText(ln, 0, (i-(lines.length-1)/2)*size*1.2));
+    ctx.restore();
+  }
+  // overlay seleksi (hanya di layar, tidak ikut unduhan)
+  if(withSel && ED.sel){
+    const e = ED.sel.kind==='sticker' ? st.stickers[ED.sel.i] : st.texts[ED.sel.i];
+    if(e){
+      const m = boxOf(ED.sel.kind, e, W, H);
+      ctx.save(); ctx.translate(m.cx*W, m.cy*H); ctx.rotate((m.rot||0)*Math.PI/180);
+      ctx.strokeStyle = '#FF6B9D'; ctx.lineWidth = 2.5*Math.max(1,W/900); ctx.setLineDash([9,7]);
+      rr(ctx, -m.w/2-8, -m.h/2-8, m.w+16, m.h+16, 10); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#FF6B9D'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(m.w/2+18, m.h/2+18, 13, 0, 6.29); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+function boxOf(kind, e, W, H){
+  const u = Math.min(W,H)/1080;
+  if(kind==='sticker'){
+    const w = e.s*Math.min(W,H)*1.25, h = w;
+    return {cx:e.fx, cy:e.fy, w, h, rot:e.rot};
+  }
+  const c = document.createElement('canvas').getContext('2d');
+  const size = e.s*Math.min(W,H);
+  c.font = `${e.italic?'italic ':''}${e.bold?'700':'500'} ${size}px ${e.font}`;
+  const lines = String(e.str).split('\n');
+  let mw = 0; lines.forEach(ln=> mw = Math.max(mw, c.measureText(ln).width));
+  return {cx:e.fx, cy:e.fy, w:mw+20*u, h:lines.length*size*1.25, rot:e.rot||0};
+}
+function markBase(){ ED.dirty = true; }
+function renderDisplay(){
+  if(!$('#s-editor').classList.contains('active')) return;
+  const cv = $('#ed-canvas');
+  if(cv.width !== ED.W || cv.height !== ED.H){ cv.width = ED.W; cv.height = ED.H; }
+  if(ED.dirty){
+    ED.base.width = ED.W; ED.base.height = ED.H;
+    paintStatic(ED.bctx, ED.W, ED.H, ED.state, ED.imgA, ED.imgB);
+    ED.dirty = false;
+  }
+  const c = cv.getContext('2d');
+  c.clearRect(0,0,ED.W,ED.H);
+  c.drawImage(ED.base,0,0);
+  paintElems(c, ED.W, ED.H, ED.state, true);
+}
+// gambar ulang saat foto datang terlambat
+setInterval(()=>{ if($('#s-editor').classList.contains('active')) renderDisplay(); }, 700);
+
+/* ---- interaksi pointer: drag / rotate / scale ---- */
+(function pointer(){
+  const cv = $('#ed-canvas');
+  let mode = null, start = null, startState = null, pRect = null;
+  function toFrac(e){ const r = cv.getBoundingClientRect(); return { fx:(e.clientX-r.left)/r.width, fy:(e.clientY-r.top)/r.height, r }; }
+  function hit(e){
+    const {fx,fy,r} = toFrac(e);
+    const X = fx*r.width, Y = fy*r.height;
+    const list = [];
+    ED.state.stickers.forEach((s,i)=>list.push({kind:'sticker',i,e:s}));
+    ED.state.texts.forEach((t,i)=>list.push({kind:'text',i,e:t}));
+    for(let k=list.length-1;k>=0;k--){
+      const {kind,i,e} = list[k];
+      const b = boxOf(kind, e, ED.W, ED.H);
+      const cx = b.cx*r.width, cy = b.cy*r.height, rot = (b.rot||0)*Math.PI/180;
+      const dx = X-cx, dy = Y-cy;
+      const lx = dx*Math.cos(-rot)-dy*Math.sin(-rot), ly = dx*Math.sin(-rot)+dy*Math.cos(-rot);
+      // handle pojok
+      const hx = b.w/2+18*(r.width/ED.W), hy = b.h/2+18*(r.width/ED.W);
+      if(Math.hypot(lx-hx, ly-hy) < 22*(r.width/ED.W)*2) return {kind,i,handle:true};
+      if(Math.abs(lx)<b.w/2+14 && Math.abs(ly)<b.h/2+14) return {kind,i};
+    }
+    return null;
+  }
+  on(cv,'pointerdown', e=>{
+    const h = hit(e);
+    if(h){
+      ED.sel = {kind:h.kind, i:h.i};
+      mode = h.handle ? 'handle' : 'drag';
+      start = toFrac(e); pRect = start.r;
+      const el = h.kind==='sticker' ? ED.state.stickers[h.i] : ED.state.texts[h.i];
+      startState = {fx:el.fx, fy:el.fy, rot:el.rot||0, s:el.s, cx:bCx(h), cy:bCy(h), d0:Math.hypot(e.clientX-bCxPx(h), e.clientY-bCyPx(h)), a0:Math.atan2(e.clientY-bCyPx(h), e.clientX-bCxPx(h))};
+    } else {
+      ED.sel = null; mode = null;
+    }
+    renderDisplay(); renderSelectionUI();
+    cv.setPointerCapture(e.pointerId);
+  });
+  function bCx(h){ const el = h.kind==='sticker'?ED.state.stickers[h.i]:ED.state.texts[h.i]; return el.fx*ED.W; }
+  function bCy(h){ const el = h.kind==='sticker'?ED.state.stickers[h.i]:ED.state.texts[h.i]; return el.fy*ED.H; }
+  function bCxPx(h){ return bCx(h)/ED.W*pRect.width + pRect.left; }
+  function bCyPx(h){ return bCy(h)/ED.H*pRect.height + pRect.top; }
+  on(cv,'pointermove', e=>{
+    if(!mode || !ED.sel) return;
+    const el = ED.sel.kind==='sticker' ? ED.state.stickers[ED.sel.i] : ED.state.texts[ED.sel.i];
+    const p = toFrac(e);
+    if(mode==='drag'){
+      el.fx = clamp(startState.fx + (p.fx-start.fx), .03, .97);
+      el.fy = clamp(startState.fy + (p.fy-start.fy), .03, .97);
+    } else if(mode==='handle'){
+      const cx = startState.cx/ED.W*pRect.width + pRect.left, cy = startState.cy/ED.H*pRect.height + pRect.top;
+      const d = Math.hypot(e.clientX-cx, e.clientY-cy), a = Math.atan2(e.clientY-cy, e.clientX-cx);
+      el.s = clamp(startState.s * d/startState.d0, .02, .5);
+      el.rot = startState.rot + (a-startState.a0)*180/Math.PI;
+    }
+    renderDisplay(); syncSelectionSliders();
+  });
+  on(cv,'pointerup', ()=>{ mode=null; });
+})();
+
+/* ---- seleksi UI (bar + panel properti) ---- */
+function renderSelectionUI(){
+  const bar = $('#sel-bar'), props = $('#ed-props');
+  if(!ED.sel){ bar.classList.remove('show'); props.innerHTML = `<h4>${ic('pen',15)} Properti</h4><div class="empty-msg">Klik stiker atau teks di kanvas untuk mengubah ukuran, rotasi, dan lainnya.</div>`; return; }
+  bar.classList.add('show');
+  bar.innerHTML = `
+    <span style="font-size:12px;font-weight:800;color:var(--mut)">${ED.sel.kind==='sticker'?'STIKER':'TEKS'}</span>
+    <input type="range" id="sb-size" min="${ED.sel.kind==='sticker'?.05:.02}" max="${ED.sel.kind==='sticker'?.35:.12}" step=".002">
+    <input type="range" id="sb-rot" min="-180" max="180" step="1">
+    <button class="mini" id="sb-dup" title="Duplikat">${ic('copy',16)}</button>
+    <button class="mini danger" id="sb-del" title="Hapus">${ic('trash',16)}</button>
+    <button class="mini" id="sb-x" title="Selesai">${ic('check',16)}</button>`;
+  syncSelectionSliders();
+  const el = () => ED.sel.kind==='sticker' ? ED.state.stickers[ED.sel.i] : ED.state.texts[ED.sel.i];
+  bar.querySelector('#sb-size').oninput = e => { el().s = +e.target.value; renderDisplay(); syncPropsSliders(); };
+  bar.querySelector('#sb-rot').oninput  = e => { el().rot = +e.target.value; renderDisplay(); syncPropsSliders(); };
+  bar.querySelector('#sb-dup').onclick  = ()=>{ const c = {...el()}; c.fx = clamp(c.fx+.05,0,1); c.fy = clamp(c.fy+.05,0,1);
+    if(ED.sel.kind==='sticker') ED.state.stickers.push(c); else ED.state.texts.push(c);
+    ED.sel.i++; renderDisplay(); renderSelectionUI(); toast('Diduplikat','copy'); };
+  bar.querySelector('#sb-del').onclick  = ()=>delSelected();
+  bar.querySelector('#sb-x').onclick    = ()=>{ ED.sel=null; renderDisplay(); renderSelectionUI(); };
+  // panel kanan (desktop)
+  props.innerHTML = `<h4>${ic('pen',15)} ${ED.sel.kind==='sticker'?'Stiker Terpilih':'Teks Terpilih'}</h4>
+    <div class="row-ctl"><label>Ukuran</label><input type="range" id="pr-size" min="${ED.sel.kind==='sticker'?.05:.02}" max="${ED.sel.kind==='sticker'?.35:.12}" step=".002"></div>
+    <div class="row-ctl"><label>Rotasi</label><input type="range" id="pr-rot" min="-180" max="180" step="1"></div>
+    <button class="btn ghost" style="width:100%" id="pr-del">${ic('trash')} Hapus Elemen</button>`;
+  props.querySelector('#pr-size').oninput = e => { el().s = +e.target.value; renderDisplay(); syncSelectionSliders(); };
+  props.querySelector('#pr-rot').oninput  = e => { el().rot = +e.target.value; renderDisplay(); syncSelectionSliders(); };
+  props.querySelector('#pr-del').onclick  = ()=>delSelected();
+  syncPropsSliders();
+}
+function syncSelectionSliders(){
+  const bar = $('#sel-bar'); if(!ED.sel || !bar.querySelector('#sb-size')) return;
+  const el = ED.sel.kind==='sticker' ? ED.state.stickers[ED.sel.i] : ED.state.texts[ED.sel.i];
+  if(el){ bar.querySelector('#sb-size').value = el.s; bar.querySelector('#sb-rot').value = el.rot||0; }
+}
+function syncPropsSliders(){
+  const p = $('#ed-props'); if(!ED.sel || !p.querySelector('#pr-size')) return;
+  const el = ED.sel.kind==='sticker' ? ED.state.stickers[ED.sel.i] : ED.state.texts[ED.sel.i];
+  if(el){ p.querySelector('#pr-size').value = el.s; p.querySelector('#pr-rot').value = el.rot||0; }
+}
+function delSelected(){
+  if(!ED.sel) return;
+  (ED.sel.kind==='sticker' ? ED.state.stickers : ED.state.texts).splice(ED.sel.i,1);
+  ED.sel = null; renderDisplay(); renderSelectionUI(); toast('Elemen dihapus','trash');
+}
+
+/* ---- rail tab & bottom nav ---- */
+const TABS = [ ['photos','image','Photo'], ['frames','frame','Frame'], ['filters','sparkle','Filter'],
+               ['stickers','sticker','Sticker'], ['texts','pen','Text'], ['bgs','palette','Bg'], ['layouts','layout','Layout'] ];
+function buildRail(){
+  $('#ed-rail').innerHTML = TABS.map(([id,icn,label]) =>
+    `<button class="rail-btn ${ED.tab===id?'on':''}" data-tab="${id}" title="${label}" aria-label="${label}">${ic(icn,20)}</button>`).join('');
+  $$('#ed-rail .rail-btn').forEach(b=>on(b,'click',()=>setTab(b.dataset.tab)));
+}
+function buildBottomNav(){
+  $('#bottom-nav').innerHTML = TABS.slice(0,6).map(([id,icn,label]) =>
+    `<button class="bn-btn ${ED.tab===id?'on':''}" data-tab="${id}"><span class="bic">${ic(icn,19)}</span>${label}</button>`).join('');
+  $$('#bottom-nav .bn-btn').forEach(b=>on(b,'click',()=>setTab(b.dataset.tab)));
+}
+function setTab(tab){
+  ED.tab = tab; ED.sel = null;
+  $$('#ed-rail .rail-btn').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  $$('#bottom-nav .bn-btn').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  renderPanel();
+  renderSelectionUI();
+  $('#ed-panel').classList.add('open');
+}
+/* ---- panel konten per tab ---- */
+const QUOTES = [
+  "Even miles apart, you're still my favorite person.",
+  "Distance means so little when someone means so much.",
+  `${R.nameA||'Kamu'} ❤ ${R.nameB||'Pasangan'}`,
+  "Miles apart, close at heart.",
+  "Can't wait to see you ❤",
+];
+function renderPanel(){
+  const p = $('#ed-panel'), st = ED.state;
+  if(ED.tab==='photos'){
+    p.innerHTML = `<h3>${ic('image',17)} Photos</h3>
+      <div class="panel-note">Ambil ulang foto kapan saja — foto baru otomatis menggantikan yang lama.</div>
+      <div class="photo-duo">
+        ${[['A',R.nameA,R.photoA],['B',R.nameB,R.photoB]].map(([r,n,url])=>`
+        <div class="photo-card"><div class="who">${esc(n||r)} <button class="retake-btn" data-r="${r}" aria-label="Ambil ulang">${ic('camera',15)}</button></div>
+          ${url?`<img src="${url}">`:`<div style="aspect-ratio:4/5;border-radius:12px;background:var(--pink-soft);display:grid;place-items:center;color:var(--mut);font-size:12px">Belum ada foto</div>`}
+        </div>`).join('')}
+      </div>`;
+    $$('#ed-panel .retake-btn').forEach(b=>on(b,'click',()=>openCamModal(b.dataset.r)));
+  }
+  else if(ED.tab==='frames'){
+    const cats = [...new Set(FRAMES.map(f=>f.cat))];
+    p.innerHTML = `<h3>${ic('frame',17)} Frames</h3>` + cats.map(cat=>`
+      <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:12px 0 8px">${cat}</div>
+      <div class="fgrid">${FRAMES.filter(f=>f.cat===cat).map(f=>`
+        <button class="fitem ${st.frame===f.id?'on':''}" data-f="${f.id}"><canvas width="120" height="150" data-frame-thumb="${f.id}"></canvas><span>${f.name}</span></button>`).join('')}
+      </div>`).join('');
+    $$('#ed-panel .fitem').forEach(b=>on(b,'click',()=>{ st.frame=b.dataset.f; markBase(); renderDisplay(); renderPanel(); }));
+    renderFrameThumbs();
+  }
+  else if(ED.tab==='filters'){
+    p.innerHTML = `<h3>${ic('sparkle',17)} Filters</h3>
+      <div class="panel-note">Filter live — dipakai untuk kedua foto. Ganti per foto lewat tombol di bawah.</div>
+      <div class="row-ctl"><label>Terapkan ke</label>
+        <select class="input" id="flt-target" style="flex:1;padding:9px 12px"><option value="both">Semua foto</option><option value="A">${esc(R.nameA||'Foto A')} saja</option><option value="B">${esc(R.nameB||'Foto B')} saja</option></select></div>
+      <div class="fgrid" style="grid-template-columns:repeat(3,1fr)">${FILTERS.map(f=>`
+        <button class="fitem ${st.filterA===f[0]&&st.filterB===f[0]?'on':''}" data-f="${f[0]}"><canvas width="120" height="150" data-flt-thumb="${f[0]}"></canvas><span>${f[1]}</span></button>`).join('')}
+      </div>`;
+    $$('#ed-panel .fitem').forEach(b=>on(b,'click',()=>{
+      const t = $('#flt-target').value;
+      if(t==='both'){ st.filterA=st.filterB=b.dataset.f; }
+      else if(t==='A'){ st.filterA=b.dataset.f; if(st.filterB===undefined) st.filterB='original'; }
+      else { st.filterB=b.dataset.f; }
+      markBase(); renderDisplay(); renderPanel();
+    }));
+    renderFilterThumbs();
+  }
+  else if(ED.tab==='stickers'){
+    const S = ['❤️','💕','💋','✨','⭐','🌹','🧸','💌','☁️','🎀','💍','🎂','🌙','🌷','🫶','🍫'];
+    p.innerHTML = `<h3>${ic('sticker',17)} Stickers</h3>
+      <div class="panel-note">Klik untuk menambahkan. Di kanvas: geser untuk memindahkan, tarik titik pink untuk memutar & mengubah ukuran.</div>
+      <div class="stick-grid">${S.map(s=>`<button data-s="${s}">${s}</button>`).join('')}</div>`;
+    $$('#ed-panel .stick-grid button').forEach(b=>on(b,'click',()=>{
+      st.stickers.push({emoji:b.dataset.s, fx:rand(.35,.65), fy:rand(.35,.6), s:.14, rot:rand(-15,15)});
+      ED.sel = {kind:'sticker', i:st.stickers.length-1};
+      renderDisplay(); renderSelectionUI();
+    }));
+  }
+  else if(ED.tab==='texts'){
+    const selText = ED.sel && ED.sel.kind==='text' ? st.texts[ED.sel.i] : null;
+    const t = selText || {str:'', font:'"Plus Jakarta Sans"', s:.05, color:'#3a2b31', bold:false, italic:false, shadow:false, align:'center', fx:.5, fy:.5, rot:0};
+    p.innerHTML = `<h3>${ic('pen',17)} ${selText?'Edit Teks':'Tambah Teks'}</h3>
+      <textarea class="input" id="tx-str" rows="2" placeholder="Tulis sesuatu yang romantis…">${esc(t.str)}</textarea>
+      <div style="margin:10px 0">${QUOTES.map(q=>`<button class="quote-btn" data-q="${esc(q)}">“${esc(q)}”</button>`).join('')}</div>
+      <div class="row-ctl"><label>Font</label><select class="input" id="tx-font" style="flex:1;padding:9px 12px">
+        ${[['"Fraunces", serif','Fraunces'],['"Plus Jakarta Sans", sans-serif','Jakarta Sans'],['Caveat, cursive','Caveat']].map(([v,l])=>`<option value="${v}" ${t.font===v?'selected':''}>${l}</option>`).join('')}
+      </select></div>
+      <div class="row-ctl"><label>Ukuran</label><input type="range" id="tx-size" min=".02" max=".12" step=".002" value="${t.s}"></div>
+      <div class="row-ctl"><label>Warna</label><div class="swatches" id="tx-colors">
+        ${['#FFFFFF','#3a2b31','#FF6B9D','#E5484D','#C9A24B','#8E7CC3'].map(c=>`<div class="swatch ${t.color===c?'on':''}" data-c="${c}" style="background:${c}"></div>`).join('')}
+      </div></div>
+      <div class="row-ctl"><label>Gaya</label><div class="tgl-row" style="flex:1">
+        <button class="tgl ${t.bold?'on':''}" id="tx-b">B</button>
+        <button class="tgl ${t.italic?'on':''}" id="tx-i" style="font-style:italic">I</button>
+        <button class="tgl ${t.shadow?'on':''}" id="tx-sh">Shadow</button>
+      </div></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        ${selText?`<button class="btn ghost" style="flex:1" id="tx-del">${ic('trash')} Hapus</button>`:''}
+        <button class="btn" style="flex:1" id="tx-add">${selText?ic('check')+' Terapkan':ic('plus')+' Tambah Teks'}</button>
+      </div>
+      <div style="border-top:1.5px solid var(--line);margin:18px 0 12px"></div>
+      <h3>${ic('calendar',17)} Our Date</h3>
+      <input class="input" id="tx-date" value="${esc(st.dateText)}" placeholder="06 • 10 • 2026 atau Since 2024">
+      <div class="swatches" style="margin-top:10px" id="date-colors">
+        ${['#FF6B9D','#3a2b31','#FFFFFF','#C9A24B'].map(c=>`<div class="swatch ${st.dateColor===c?'on':''}" data-c="${c}" style="background:${c}"></div>`).join('')}
+      </div>`;
+    const bind = ()=>{ if(selText){ Object.assign(selText, readTx()); markBase(); renderDisplay(); } };
+    function readTx(){ return { str:$('#tx-str').value, font:$('#tx-font').value, s:+$('#tx-size').value,
+      color:$('#tx-colors .on')?.dataset.c||t.color, bold:$('#tx-b').classList.contains('on'),
+      italic:$('#tx-i').classList.contains('on'), shadow:$('#tx-sh').classList.contains('on'), align:'center' }; }
+    $$('#ed-panel .quote-btn').forEach(b=>on(b,'click',()=>{ $('#tx-str').value = b.dataset.q; bind(); }));
+    $('#tx-b').onclick = ()=>{ $('#tx-b').classList.toggle('on'); bind(); };
+    $('#tx-i').onclick = ()=>{ $('#tx-i').classList.toggle('on'); bind(); };
+    $('#tx-sh').onclick = ()=>{ $('#tx-sh').classList.toggle('on'); bind(); };
+    $('#tx-size').oninput = bind; $('#tx-str').oninput = bind; $('#tx-font').onchange = bind;
+    $$('#tx-colors .swatch').forEach(s=>on(s,'click',()=>{ $$('#tx-colors .swatch').forEach(x=>x.classList.remove('on')); s.classList.add('on'); bind(); }));
+    $('#tx-add').onclick = ()=>{
+      const props = readTx(); if(!props.str.trim()){ toast('Tulis teksnya dulu','pen'); return; }
+      if(selText){ Object.assign(selText, props); }
+      else { st.texts.push({...props, fx:.5, fy:.5, rot:0}); ED.sel = {kind:'text', i:st.texts.length-1}; }
+      renderDisplay(); renderSelectionUI(); toast('Teks tersimpan','check');
+    };
+    if($('#tx-del')) $('#tx-del').onclick = delSelected;
+    $('#tx-date').oninput = e=>{ st.dateText = e.target.value; markBase(); renderDisplay(); };
+    $$('#date-colors .swatch').forEach(s=>on(s,'click',()=>{ st.dateColor = s.dataset.c; markBase(); renderDisplay(); renderPanel(); }));
+  }
+  else if(ED.tab==='bgs'){
+    p.innerHTML = `<h3>${ic('palette',17)} Background</h3><div class="fgrid" style="grid-template-columns:repeat(3,1fr)">
+      ${BGS.map(b=>`<button class="fitem ${st.bg===b.id?'on':''}" data-b="${b.id}"><canvas width="120" height="150" data-bg-thumb="${b.id}"></canvas><span>${b.name}</span></button>`).join('')}
+    </div>`;
+    $$('#ed-panel .fitem').forEach(b=>on(b,'click',()=>{ st.bg=b.dataset.b; markBase(); renderDisplay(); renderPanel(); }));
+    renderBgThumbs();
+  }
+  else if(ED.tab==='layouts'){
+    p.innerHTML = `<h3>${ic('layout',17)} Layout</h3><div class="fgrid" style="grid-template-columns:repeat(2,1fr)">
+      ${LAYOUTS.map(l=>`<button class="fitem ${st.layout===l.id?'on':''}" data-l="${l.id}"><canvas width="150" height="188" data-lay-thumb="${l.id}"></canvas><span>${l.name}</span></button>`).join('')}
+    </div>`;
+    $$('#ed-panel .fitem').forEach(b=>on(b,'click',()=>{ st.layout=b.dataset.l; markBase(); renderDisplay(); renderPanel(); }));
+    renderLayoutThumbs($$('#ed-panel [data-lay-thumb]'), 150, 188);
+  }
+}
+/* ---- thumbnail generator (mini canvas dengan foto asli) ---- */
+function renderLayoutThumbs(canvases, w=230, h=288){
+  canvases.forEach(cv=>{
+    const c = cv.getContext('2d'); const k = w/1080;
+    c.fillStyle = '#FFF0F5'; c.fillRect(0,0,w,h);
+    const st = ED.state;
+    const lay = cv.dataset.layThumb;
+    const A = ED.imgA || dummyImg(), B = ED.imgB || dummyImg();
+    const tmp = { a:A, b:B, fa:filterStr(st.filterA), fb:filterStr(st.filterB), names:{a:R.nameA,b:R.nameB} };
+    c.save(); c.scale(k,k); LAYOUTS.find(l=>l.id===lay).draw(c,1080,1350,tmp); c.restore();
+  });
+}
+let _dummy = null;
+function dummyImg(){
+  if(_dummy) return _dummy;
+  const c = document.createElement('canvas'); c.width=c.height=400; const x=c.getContext('2d');
+  const g = x.createLinearGradient(0,0,400,400); g.addColorStop(0,'#FFD3E0'); g.addColorStop(1,'#FFA9C6');
+  x.fillStyle=g; x.fillRect(0,0,400,400);
+  x.fillStyle='rgba(255,255,255,.6)'; heartPath(x,200,220,90); x.fill();
+  _dummy = new Image(); _dummy.src = c.toDataURL(); return _dummy;
+}
+function renderFrameThumbs(){
+  $$('#ed-panel [data-frame-thumb]').forEach(cv=>{
+    const c = cv.getContext('2d'), w=120,h=150;
+    c.fillStyle='#FFF0F5'; c.fillRect(0,0,w,h);
+    c.save(); c.scale(w/1080,h/1350);
+    c.fillStyle='#fff'; c.fillRect(90,110,900,900);
+    FRAMES.find(f=>f.id===cv.dataset.frameThumb).draw(c,1080,1350); c.restore();
+  });
+}
+function renderBgThumbs(){
+  $$('#ed-panel [data-bg-thumb]').forEach(cv=>{
+    const c = cv.getContext('2d'); c.save(); c.scale(120/1080,150/1350);
+    BGS.find(b=>b.id===cv.dataset.bgThumb).draw(c,1080,1350); c.restore();
+  });
+}
+function renderFilterThumbs(){
+  $$('#ed-panel [data-flt-thumb]').forEach(cv=>{
+    const img = ED.imgA || dummyImg(); const c = cv.getContext('2d'), w=120,h=150;
+    const tmp = document.createElement('canvas'); tmp.width=720; tmp.height=900;
+    drawPhoto(tmp.getContext('2d'), img, filterStr(cv.dataset.fltThumb), 0,0,720,900,0);
+    c.drawImage(tmp,0,0,w,h);
+  });
+}
+/* ---- Surprise Me: random semua desain ---- */
+ $('#btn-surprise').onclick = ()=>{
+  const st = ED.state;
+  st.layout = pick(LAYOUTS).id;
+  st.frame = pick(FRAMES).id;
+  const f = pick(FILTERS)[0]; st.filterA = f; st.filterB = f;
+  st.bg = pick(BGS).id;
+  if(Math.random() < .8) st.stickers.push({emoji:pick(['❤️','✨','💕','⭐','💌']), fx:rand(.2,.8), fy:rand(.15,.85), s:rand(.1,.18), rot:rand(-20,20)});
+  st.dateText = st.dateText || pick(['Since 2024','06 • 10 • 2026','Forever & Always']);
+  markBase(); renderDisplay();
+  if(ED.tab) renderPanel();
+  toast('Desain kejutan siap!','wand');
+};
+/* ---- modal kamera (retake dari editor) ---- */
+function openCamModal(targetRole){
+  const m = openModal(`<h3>Ambil Ulang Foto</h3><p class="msub">Foto untuk ${esc(targetRole==='A'?R.nameA:R.nameB)}</p>
+    <div class="cam-stage"><video id="cm-vid" autoplay playsinline muted></video></div>
+    <button class="shutter" id="cm-shot" aria-label="Ambil foto"></button>`, 'cam-modal');
+  Cam.attach(m.querySelector('#cm-vid')).then(ok=>{ if(!ok) toast('Kamera tidak tersedia — coba Foto Demo di layar room','close'); });
+  m.querySelector('.x').addEventListener('click', ()=>Cam.stop());
+  m.querySelector('#cm-shot').onclick = async ()=>{
+    for(let i=3;i>0;i--){
+      const cd = $('#countdown'); cd.querySelector('span').textContent = i;
+      cd.classList.remove('show'); void cd.offsetWidth; cd.classList.add('show');
+      await new Promise(r=>setTimeout(r,900));
+    }
+    $('#countdown').classList.remove('show');
+    const fl = $('#flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+    const url = Cam.grab(); if(!url) return;
+    Cam.stop(); closeModal();
+    setPhoto(targetRole, url, !R.solo);
+    ED.imgA = ED.imgB = null;
+    const load = (u,cb)=>{ const im=new Image(); im.onload=()=>cb(im); im.src=u; };
+    if(R.photoA) load(R.photoA, im=>{ ED.imgA=im; markBase(); renderDisplay(); });
+    if(R.photoB) load(R.photoB, im=>{ ED.imgB=im; markBase(); renderDisplay(); });
+    toast('Foto diperbarui','check');
+  };
+}
+/* ---- tombol editor ---- */
+ $('#btn-ed-back').onclick = ()=>go('layouts');
+ $('#btn-lay-back').onclick = ()=>go('room');
+ $('#btn-res-back').onclick = ()=>go('editor');
+ $('#btn-ed-done').onclick = ()=>go('result');
+
+/* ---------- 17. LAYOUT CHOOSER ---------- */
+function buildLayoutGrid(container, big){
+  container.innerHTML = LAYOUTS.map(l=>`
+    <button class="lay-card glass ${ED.state.layout===l.id?'sel':''}" data-l="${l.id}">
+      <canvas width="${big?460:150}" height="${big?575:188}" data-lay-grid="${l.id}"></canvas>
+      <h4>${l.name}</h4><p>${l.desc}</p>
+    </button>`).join('');
+  renderLayoutThumbs($$('[data-lay-grid]'), big?460:150, big?575:188);
+  $$('#layout-grid .lay-card').forEach(b=>on(b,'click',()=>{
+    ED.state.layout = b.dataset.l;
+    $$('#layout-grid .lay-card').forEach(x=>x.classList.remove('sel')); b.classList.add('sel');
+    setTimeout(()=>go('editor'), 280);
+    toast('Layout dipilih: '+LAYOUTS.find(l=>l.id===b.dataset.l).name,'layout');
+  }));
+}
+
+/* ---------- 18. RENDER HASIL, DOWNLOAD & SHARE ---------- */
+function paintFull(W,H){
+  const cv = document.createElement('canvas'); cv.width=W; cv.height=H;
+  const c = cv.getContext('2d');
+  paintStatic(c,W,H,ED.state,ED.imgA,ED.imgB);
+  paintElems(c,W,H,ED.state,false);
+  return cv;
+}
+function enterResult(){
+  const [w,h] = $('#res-size').value.split('x').map(Number);
+  const cv = $('#res-canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(paintFull(w,h),0,0);
+  $('#res-meta').innerHTML = `<div class="nm">${esc(R.nameA)} ❤ ${esc(R.nameB)}</div>${todayStr()} · ${R.code}`;
+  confetti();
+  setTimeout(()=>{
+    openModal(`<div style="text-align:center;padding:8px 0">
+      <div style="font-size:34px;letter-spacing:.3em;color:var(--pink)">✦ ✦ ✦</div>
+      <h3 style="margin:12px 0 8px">No matter how far you are,<br>this moment belongs to both of you.</h3>
+      <p class="msub" style="margin-bottom:4px">Simpan, kirim, dan simpan kenangan ini selamanya.</p>
+      <button class="btn" style="width:100%;margin-top:12px" onclick="closeModal()">${ic('heartFill')} Lovely</button></div>`);
+  }, 1600);
+}
+const resObs = new MutationObserver(()=>{ if($('#s-result').classList.contains('active')) enterResult(); });
+resObs.observe($('#s-result'), {attributes:true, attributeFilter:['class']});
+ $('#res-size').onchange = ()=>{
+  const [w,h] = $('#res-size').value.split('x').map(Number);
+  const cv = $('#res-canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(paintFull(w,h),0,0);
+};
+function downloadResult(fmt){
+  const [w,h] = $('#res-size').value.split('x').map(Number);
+  const cv = paintFull(w,h);
+  const mime = fmt==='png' ? 'image/png' : 'image/jpeg';
+  if(fmt==='jpg'){ // JPEG butuh latar solid — sudah dijamin oleh background
+    const c2 = document.createElement('canvas'); c2.width=w; c2.height=h;
+    const x = c2.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(cv,0,0);
+    cv.getContext('2d'); var out = c2;
+  } else var out = cv;
+  out.toBlob(blob=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `LDR-Booth-${R.code.replace('LOVE-','')}-${Date.now()}.${fmt}`;
+    a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+    toast('Foto diunduh ('+w+'×'+h+')','download');
+  }, mime, .92);
+}
+ $('#btn-dl-png').onclick = ()=>downloadResult('png');
+ $('#btn-dl-jpg').onclick = ()=>downloadResult('jpg');
+ $('#btn-share').onclick = async ()=>{
+  const [w,h] = $('#res-size').value.split('x').map(Number);
+  const cv = paintFull(w,h);
+  cv.toBlob(async blob=>{
+    const file = new File([blob], 'ldr-booth.png', {type:'image/png'});
+    const text = `Photobooth kita: ${R.nameA} ❤ ${R.nameB} — ${R.code}`;
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:'Our LDR Memory', text}); toast('Terbagi!','share'); }catch(e){}
+    } else {
+      const link = location.origin + location.pathname;
+      openShareChoices(text + ' ' + link, link);
+    }
+  }, 'image/png');
+};
+ $('#btn-again').onclick = ()=>{
+  R.code=null; R.role=null; R.solo=false; R.photoA=R.photoB=null; R.partnerOn=false;
+  CH.close(); Cam.stop();
+  ED.state = { layout:'side', frame:'pinkheart', filterA:'original', filterB:'original', bg:'blush', dateText:'Since 2024', dateColor:'#FF6B9D', stickers:[], texts:[] };
+  go('landing'); toast('Siap membuat kenangan baru!','refresh');
+};
+
+/* ---------- 19. INIT ---------- */
+go('landing');
+</script>
+</body>
+</html>
